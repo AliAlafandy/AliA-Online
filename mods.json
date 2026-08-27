@@ -1,10 +1,10 @@
 {
   "mods": [
     {
-      "name": "The Base Game",
-      "description": "An Awesome game By Ali Alafandy.",
-      "icon": "images/Base Game/iconOG.png",
-      "download_url": "https://github.com/AliAlafandy/AliA-Game/releases"
+      "name": "Ali-A Mod Template",
+      "description": "This a Mod Folder for making Mods on Ali Alafandy Game.",
+      "icon": "images/alafandySetting.png",
+      "download_url": "https://github.com/AliAlafandy/AliA-Mod"
     }
   ]
 }
