@@ -6,37 +6,61 @@
     <title>Ali-A Online</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d0d0d;
             color: #ffffff;
             text-align: center;
             padding: 20px;
         }
-        h1 { color: #00ffcc; }
+        h1 {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.6), 0 0 20px rgba(0, 255, 204, 0.4);
+            letter-spacing: 2px;
+        }
+        h2 {
+            color: #ff007f;
+            text-shadow: 0 0 8px rgba(255, 0, 127, 0.5);
+        }
         .panel {
-            background: #1e1e1e;
-            padding: 20px;
+            background: #16161a;
+            padding: 25px;
             margin: 20px auto;
             max-width: 450px;
-            border-radius: 8px;
-            border: 1px solid #333;
+            border-radius: 12px;
+            border: 1px solid #00ffcc;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
         }
         input, button {
-            padding: 10px;
-            margin: 8px;
-            width: 80%;
-            border-radius: 5px;
+            padding: 12px;
+            margin: 10px 0;
+            width: 85%;
+            border-radius: 6px;
             border: 1px solid #444;
-            background: #2a2a2a;
+            background: #111115;
             color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        input:focus {
+            border-color: #00ffcc;
+            box-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
         }
         button {
             background-color: #00ffcc;
-            color: #121212;
+            color: #0d0d0d;
             font-weight: bold;
             cursor: pointer;
+            border: none;
+            text-shadow: none;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
+            transition: all 0.3s ease;
         }
-        button:hover { background-color: #00cc99; }
+        button:hover {
+            background-color: #ff007f;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.8);
+        }
         .hidden { display: none !important; }
         .toggle-link {
             color: #00ffcc;
@@ -44,6 +68,10 @@
             text-decoration: underline;
             margin-top: 10px;
             display: inline-block;
+            text-shadow: 0 0 5px rgba(0, 255, 204, 0.4);
+        }
+        .toggle-link:hover {
+            color: #ff007f;
         }
         #mods-container {
             display: flex;
@@ -53,22 +81,36 @@
             margin-top: 30px;
         }
         .mod-card {
-            background-color: #1e1e1e;
-            border: 1px solid #333;
-            border-radius: 8px;
+            background-color: #16161a;
+            border: 1px solid #ff007f;
+            border-radius: 10px;
             padding: 20px;
             width: 250px;
             text-align: center;
+            box-shadow: 0 0 10px rgba(255, 0, 127, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .mod-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
         }
         .download-btn {
             display: inline-block;
-            margin-top: 10px;
+            margin-top: 15px;
             padding: 10px 15px;
-            background-color: #00ffcc;
-            color: #121212;
+            background-color: transparent;
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
             text-decoration: none;
             font-weight: bold;
             border-radius: 5px;
+            box-shadow: 0 0 8px rgba(0, 255, 204, 0.2);
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            background-color: #00ffcc;
+            color: #0d0d0d;
+            box-shadow: 0 0 15px rgba(0, 255, 204, 0.8);
         }
     </style>
 </head>
@@ -95,7 +137,7 @@
 
     <div class="panel hidden" id="upload-panel">
         <h3>Upload Mod & Auto-Update</h3>
-        <p>Logged in as: <span id="current-user" style="color: #00ffcc; font-weight: bold;"></span> <button onclick="logout()" style="width:auto; padding:2px 8px; margin-left: 10px;">Logout</button></p>
+        <p>Logged in as: <span id="current-user" style="color: #00ffcc; font-weight: bold;"></span> <button onclick="logout()" style="width:auto; padding:4px 10px; margin-left: 10px;">Logout</button></p>
         <input type="password" id="gh-token" placeholder="GitHub Personal Access Token"><br>
         <input type="text" id="mod-name" placeholder="Mod Name (e.g. superMod)"><br>
         <input type="text" id="mod-desc" placeholder="Mod Description"><br>
