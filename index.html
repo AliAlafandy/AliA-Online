@@ -38,6 +38,13 @@
         }
         button:hover { background-color: #00cc99; }
         .hidden { display: none !important; }
+        .toggle-link {
+            color: #00ffcc;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+            display: inline-block;
+        }
         #mods-container {
             display: flex;
             flex-wrap: wrap;
@@ -69,135 +76,122 @@
     <h1>AliA Online Server And Mod Uploader</h1>
 
     <div class="panel" id="auth-panel">
-        <h3>Account Setup</h3>
-        <input type="text" id="username" placeholder="Your Username (e.g. alialafandy)"><br>
-        <input type="password" id="gh-token" placeholder="GitHub Personal Access Token"><br>
-        <button onclick="saveCredentials()">Save Credentials</button>
+        
+        <div id="login-form">
+            <h3>Login to Your Account</h3>
+            <input type="text" id="login-username" placeholder="Username"><br>
+            <input type="password" id="login-password" placeholder="Password"><br>
+            <button onclick="handleLogin()">Login</button>
+            <p>Don't have an account? <span class="toggle-link" onclick="switchView('register')">Register here</span></p>
+        </div>
+
+        <div id="register-form" class="hidden">
+            <h3>Create an Account</h3>
+            <input type="text" id="reg-username" placeholder="Choose Username"><br>
+            <input type="password" id="reg-password" placeholder="Choose Password"><br>
+            <button onclick="handleRegister()">Register Account</button>
+            <p>Already have an account? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
+        </div>
+
     </div>
 
     <div class="panel hidden" id="upload-panel">
-        <h3>Upload Mod & Auto-Update</h3>
-        <p>Logged in as: <span id="current-user" style="color: #00ffcc;"></span> <button onclick="logout()" style="width:auto; padding:2px 8px;">Switch</button></p>
+        <h3>Upload Mod & Manage</h3>
+        <p>Logged in as: <span id="current-user" style="color: #00ffcc; font-weight: bold;"></span> <button onclick="logout()" style="width:auto; padding:2px 8px; margin-left: 10px;">Logout</button></p>
         <input type="text" id="mod-name" placeholder="Mod Name (e.g. superMod)"><br>
         <input type="text" id="mod-desc" placeholder="Mod Description"><br>
         <input type="file" id="mod-file" accept=".zip"><br>
-        <button onclick="uploadModToGitHub()">Upload & Update JSON</button>
+        <button onclick="simulateUpload()">Generate Mod Link & Path</button>
     </div>
 
     <h2>Available Mods</h2>
     <div id="mods-container">Loading mods...</div>
 
     <script>
-        const REPO_OWNER = "alialafandy";
+        const REPO_OWNer = "alialafandy";
         const REPO_NAME = "AliA-Online";
-        
+
         function checkAuth() {
-            const user = localStorage.getItem('alia_username');
-            const token = localStorage.getItem('alia_token');
-            if (user && token) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            if (loggedUser) {
                 document.getElementById('auth-panel').classList.add('hidden');
                 document.getElementById('upload-panel').classList.remove('hidden');
-                document.getElementById('current-user').innerText = user;
+                document.getElementById('current-user').innerText = loggedUser;
             } else {
                 document.getElementById('auth-panel').classList.remove('hidden');
                 document.getElementById('upload-panel').classList.add('hidden');
             }
         }
 
-        function saveCredentials() {
-            const user = document.getElementById('username').value.trim();
-            const token = document.getElementById('gh-token').value.trim();
-            if(user && token) {
-                localStorage.setItem('alia_username', user);
-                localStorage.setItem('alia_token', token);
+        function switchView(view) {
+            if (view === 'register') {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            } else {
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('login-form').classList.remove('hidden');
+            }
+        }
+
+        function handleRegister() {
+            const user = document.getElementById('reg-username').value.trim();
+            const pass = document.getElementById('reg-password').value.trim();
+
+            if (!user || !pass) {
+                alert("Please fill in both fields.");
+                return;
+            }
+
+            let accounts = JSON.parse(localStorage.getItem('alia_accounts') || "{}");
+            if (accounts[user]) {
+                alert("Username already exists! Choose another or log in.");
+                return;
+            }
+
+            accounts[user] = pass;
+            localStorage.setItem('alia_accounts', JSON.stringify(accounts));
+            
+            localStorage.setItem('alia_logged_in_user', user);
+            alert(`Account created successfully! Welcome, ${user}.`);
+            checkAuth();
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+
+            let accounts = JSON.parse(localStorage.getItem('alia_accounts') || "{}");
+
+            if (accounts[user] && accounts[user] === pass) {
+                localStorage.setItem('alia_logged_in_user', user);
+                alert(`Welcome back, ${user}!`);
                 checkAuth();
             } else {
-                alert("Please fill in both fields.");
+                alert("Invalid username or password.");
             }
         }
 
         function logout() {
-            localStorage.removeItem('alia_username');
-            localStorage.removeItem('alia_token');
+            localStorage.removeItem('alia_logged_in_user');
             checkAuth();
         }
 
-        const toBase64 = file => new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = error => reject(error);
-        });
-
-        async function uploadModToGitHub() {
-            const user = localStorage.getItem('alia_username');
-            const token = localStorage.getItem('alia_token');
+        function simulateUpload() {
+            const user = localStorage.getItem('alia_logged_in_user');
             const modName = document.getElementById('mod-name').value.trim();
-            const modDesc = document.getElementById('mod-desc').value.trim();
             const fileInput = document.getElementById('mod-file');
 
             if (!modName || fileInput.files.length === 0) {
-                alert("Provide a mod name and a .zip file.");
+                alert("Please provide a mod name and select a .zip file.");
                 return;
             }
 
-            const file = fileInput.files[0];
-            const zipPath = `${user}/mods/${modName}.zip`;
-            const downloadUrl = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${zipPath}`;
-
-            try {
-                alert("Uploading mod file to GitHub...");
-                const base64Content = await toBase64(file);
-
-                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${zipPath}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Add ${modName}.zip by ${user}`,
-                        content: base64Content
-                    })
-                });
-
-                alert("File uploaded! Now updating mods.json...");
-
-                const jsonResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const jsonichtData = await jsonResponse.json();
-                const sha = jsonichtData.sha;
-                
-                let decodedContent = JSON.parse(atob(jsonichtData.content));
-                
-                decodedContent.mods.push({
-                    name: modName,
-                    description: modDesc,
-                    download_url: downloadUrl,
-                    icon: "default-icon.png"
-                });
-
-                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Update mods.json with ${modName}`,
-                        content: btoa(JSON.stringify(decodedContent, null, 2)),
-                        sha: sha
-                    })
-                });
-
-                alert("Success! Your mod has been uploaded and mods.json was auto-updated.");
-                location.reload();
-
-            } catch (err) {
-                console.error(err);
-                alert("Upload failed. Check console for details.");
-            }
+            const generatedUrl = `https://${REPO_OWNer}.github.io/${REPO_NAME}/${user}/mods/${modName}.zip`;
+            alert(`Mod structured successfully!\n\nTarget Repository Path: ${user}/mods/${modName}.zip\nGenerated Link: ${generatedUrl}`);
+            
+            document.getElementById('mod-name').value = '';
+            document.getElementById('mod-desc').value = '';
+            fileInput.value = '';
         }
 
         fetch('mods.json')
