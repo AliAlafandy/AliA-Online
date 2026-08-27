@@ -1,5 +1,10 @@
 {
-  "version": "1.0.0",
-  "changelog": "",
-  "download_link": ""
+  "mods": [
+    {
+      "name": "The Base Game",
+      "description": "An Awesome game By Ali Alafandy.",
+      "icon": "documents/app/iconOG.png",
+      "download_url": "https://github.com/AliAlafandy/AliA-Game/releases"
+    }
+  ]
 }
