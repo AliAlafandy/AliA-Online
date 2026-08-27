@@ -52,7 +52,6 @@
             font-weight: bold;
             cursor: pointer;
             border: none;
-            text-shadow: none;
             box-shadow: 0 0 10px rgba(0, 255, 204, 0.4);
             transition: all 0.3s ease;
         }
@@ -93,6 +92,14 @@
         .mod-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 0 20px rgba(255, 0, 127, 0.4);
+        }
+        .mod-icon {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #444;
+            margin-bottom: 10px;
         }
         .download-btn {
             display: inline-block;
@@ -269,7 +276,7 @@
                     name: modName,
                     description: modDesc,
                     download_url: downloadUrl,
-                    icon: "default-icon.png"
+                    icon: "images/default-icon.png"
                 });
 
                 await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
@@ -302,6 +309,7 @@
                 data.mods.forEach(mod => {
                     container.innerHTML += `
                         <div class="mod-card">
+                            <img src="${mod.icon || 'images/default-icon.png'}" alt="${mod.name}" class="mod-icon">
                             <h3>${mod.name}</h3>
                             <p>${mod.description || ''}</p>
                             <a href="${mod.download_url}" class="download-btn" target="_blank">Download Mod</a>
