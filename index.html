@@ -76,7 +76,6 @@
     <h1>AliA Online Server And Mod Uploader</h1>
 
     <div class="panel" id="auth-panel">
-        
         <div id="login-form">
             <h3>Login to Your Account</h3>
             <input type="text" id="login-username" placeholder="Username"><br>
@@ -92,23 +91,23 @@
             <button onclick="handleRegister()">Register Account</button>
             <p>Already have an account? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
         </div>
-
     </div>
 
     <div class="panel hidden" id="upload-panel">
-        <h3>Upload Mod & Manage</h3>
+        <h3>Upload Mod & Auto-Update</h3>
         <p>Logged in as: <span id="current-user" style="color: #00ffcc; font-weight: bold;"></span> <button onclick="logout()" style="width:auto; padding:2px 8px; margin-left: 10px;">Logout</button></p>
+        <input type="password" id="gh-token" placeholder="GitHub Personal Access Token"><br>
         <input type="text" id="mod-name" placeholder="Mod Name (e.g. superMod)"><br>
         <input type="text" id="mod-desc" placeholder="Mod Description"><br>
         <input type="file" id="mod-file" accept=".zip"><br>
-        <button onclick="simulateUpload()">Generate Mod Link & Path</button>
+        <button onclick="uploadModToGitHub()">Upload & Auto-Update JSON</button>
     </div>
 
     <h2>Available Mods</h2>
     <div id="mods-container">Loading mods...</div>
 
     <script>
-        const REPO_OWNer = "alialafandy";
+        const REPO_OWNER = "alialafandy";
         const REPO_NAME = "AliA-Online";
 
         function checkAuth() {
@@ -150,7 +149,6 @@
 
             accounts[user] = pass;
             localStorage.setItem('alia_accounts', JSON.stringify(accounts));
-            
             localStorage.setItem('alia_logged_in_user', user);
             alert(`Account created successfully! Welcome, ${user}.`);
             checkAuth();
@@ -176,22 +174,82 @@
             checkAuth();
         }
 
-        function simulateUpload() {
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
+
+        async function uploadModToGitHub() {
             const user = localStorage.getItem('alia_logged_in_user');
+            const token = document.getElementById('gh-token').value.trim();
             const modName = document.getElementById('mod-name').value.trim();
+            const modDesc = document.getElementById('mod-desc').value.trim();
             const fileInput = document.getElementById('mod-file');
 
-            if (!modName || fileInput.files.length === 0) {
-                alert("Please provide a mod name and select a .zip file.");
+            if (!token || !modName || fileInput.files.length === 0) {
+                alert("Please provide your GitHub token, mod name, and select a .zip file.");
                 return;
             }
 
-            const generatedUrl = `https://${REPO_OWNer}.github.io/${REPO_NAME}/${user}/mods/${modName}.zip`;
-            alert(`Mod structured successfully!\n\nTarget Repository Path: ${user}/mods/${modName}.zip\nGenerated Link: ${generatedUrl}`);
-            
-            document.getElementById('mod-name').value = '';
-            document.getElementById('mod-desc').value = '';
-            fileInput.value = '';
+            const file = fileInput.files[0];
+            const zipPath = `${user}/mods/${modName}.zip`;
+            const downloadUrl = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${zipPath}`;
+
+            try {
+                alert("Uploading mod file to your repository path...");
+                const base64Content = await toBase64(file);
+
+                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${zipPath}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Add ${modName}.zip by ${user}`,
+                        content: base64Content
+                    })
+                });
+
+                alert("File uploaded! Now automatically updating mods.json...");
+
+                const jsonResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const jsonData = await jsonResponse.json();
+                const sha = jsonData.sha;
+                
+                let decodedContent = JSON.parse(atob(jsonData.content));
+                
+                decodedContent.mods.push({
+                    name: modName,
+                    description: modDesc,
+                    download_url: downloadUrl,
+                    icon: "default-icon.png"
+                });
+
+                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: `Auto-update mods.json with ${modName} by ${user}`,
+                        content: btoa(JSON.stringify(decodedContent, null, 2)),
+                        sha: sha
+                    })
+                });
+
+                alert("Success! Your mod file is uploaded to your custom folder and mods.json has been updated.");
+                location.reload();
+
+            } catch (err) {
+                console.error(err);
+                alert("Upload failed. Check console for details.");
+            }
         }
 
         fetch('mods.json')
