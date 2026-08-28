@@ -267,7 +267,7 @@
             }
         }
 
-        fetch('mods.json')
+        fetch('mods.json?t=' + new Date().getTime())
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('mods-container');
@@ -287,7 +287,7 @@
                     `;
                 });
             }).catch(() => document.getElementById('mods-container').innerText = "No mods found.");
-
+        
         checkAuth();
     </script>
 </body>
