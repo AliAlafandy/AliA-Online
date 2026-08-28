@@ -148,6 +148,23 @@
             box-shadow: 0 0 15px rgba(88, 101, 242, 0.8);
         }
 
+        .btn-github {
+            background-color: #000000;
+            color: #ffffff;
+            border: 1px solid #00d2ff;
+            width: 85%;
+            margin-top: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .btn-github:hover {
+            background-color: #111111;
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
+        }
+
         .oauth-divider {
             margin: 15px 0;
             font-size: 12px;
@@ -405,6 +422,7 @@
                         <div class="social-container">
                             <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signup_with" data-size="large"></div>
                             <button class="btn-discord" onclick="handleDiscordSignIn()">Register with Discord</button>
+                            <button class="btn-github" onclick="handleGitHubSignIn()">Login with GitHub</button>
                         </div>
 
                         <p>Already have an account? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
