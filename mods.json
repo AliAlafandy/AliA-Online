@@ -5,12 +5,6 @@
       "description": "This a Mod Folder for making Mods on Ali Alafandy Game.",
       "icon": "images/alafandySetting.png",
       "download_url": "https://github.com/AliAlafandy/AliA-Mod"
-    },
-    {
-      "name": "Testing",
-      "description": "dsdsdsd",
-      "download_url": "http://alia-server.onrender.com/uploads/Ethantobot11/mods/Testing.zip",
-      "icon": "images/default-icon.png"
     }
   ]
 }
