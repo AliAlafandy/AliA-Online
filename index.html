@@ -181,43 +181,59 @@
             }
         }
 
-        function handleRegister() {
+        async function handleRegister() {
             const user = document.getElementById('reg-username').value.trim();
             const pass = document.getElementById('reg-password').value.trim();
-
+        
             if (!user || !pass) {
                 alert("Please fill in both fields.");
                 return;
             }
-
-            let accounts = JSON.parse(localStorage.getItem('alia_accounts') || "{}");
-            if (accounts[user]) {
-                alert("Username already exists! Choose another or log in.");
-                return;
+    
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await response.json();
+        
+                if (response.ok) {
+                    localStorage.setItem('alia_logged_in_user', user);
+                    alert(`Account created successfully! Welcome, ${user}.`);
+                    checkAuth();
+                } else {
+                    alert(data.error || "Registration failed.");
+                }
+            } catch (err) {
+                alert("Network error during registration.");
             }
-
-            accounts[user] = pass;
-            localStorage.setItem('alia_accounts', JSON.stringify(accounts));
-            localStorage.setItem('alia_logged_in_user', user);
-            alert(`Account created successfully! Welcome, ${user}.`);
-            checkAuth();
         }
-
-        function handleLogin() {
+        
+        async function handleLogin() {
             const user = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value.trim();
-
-            let accounts = JSON.parse(localStorage.getItem('alia_accounts') || "{}");
-
-            if (accounts[user] && accounts[user] === pass) {
-                localStorage.setItem('alia_logged_in_user', user);
-                alert(`Welcome back, ${user}!`);
-                checkAuth();
-            } else {
-                alert("Invalid username or password.");
+        
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+                const data = await response.json();
+        
+                if (response.ok) {
+                    localStorage.setItem('alia_logged_in_user', user);
+                    alert(`Welcome back, ${user}!`);
+                    checkAuth();
+                } else {
+                    alert(data.error || "Invalid username or password.");
+                }
+            } catch (err) {
+                alert("Network error during login.");
             }
         }
-
+        
         function logout() {
             localStorage.removeItem('alia_logged_in_user');
             checkAuth();
@@ -232,69 +248,36 @@
 
         async function uploadModToGitHub() {
             const user = localStorage.getItem('alia_logged_in_user');
-            const token = document.getElementById('gh-token').value.trim();
             const modName = document.getElementById('mod-name').value.trim();
             const modDesc = document.getElementById('mod-desc').value.trim();
             const fileInput = document.getElementById('mod-file');
-
-            if (!token || !modName || fileInput.files.length === 0) {
-                alert("Please provide your GitHub token, mod name, and select a .zip file.");
+        
+            if (!modName || fileInput.files.length === 0) {
+                alert("Please provide a mod name and select a .zip file.");
                 return;
             }
-
+        
             const file = fileInput.files[0];
-            const zipPath = `${user}/mods/${modName}.zip`;
-            const downloadUrl = `https://${REPO_OWNER}.github.io/${REPO_NAME}/${zipPath}`;
-
+            const formData = new FormData();
+            formData.append('username', user);
+            formData.append('modName', modName);
+            formData.append('modDesc', modDesc);
+            formData.append('modFile', file);
+        
             try {
-                alert("Uploading mod file to your repository path...");
-                const base64Content = await toBase64(file);
-
-                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${zipPath}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Add ${modName}.zip by ${user}`,
-                        content: base64Content
-                    })
+                alert("Uploading mod through your server...");
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
                 });
-
-                alert("File uploaded! Now automatically updating mods.json...");
-
-                const jsonResponse = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const jsonData = await jsonResponse.json();
-                const sha = jsonData.sha;
-                
-                let decodedContent = JSON.parse(atob(jsonData.content));
-                
-                decodedContent.mods.push({
-                    name: modName,
-                    description: modDesc,
-                    download_url: downloadUrl,
-                    icon: "images/default-icon.png"
-                });
-
-                await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/mods.json`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: `Auto-update mods.json with ${modName} by ${user}`,
-                        content: btoa(JSON.stringify(decodedContent, null, 2)),
-                        sha: sha
-                    })
-                });
-
-                alert("Success! Your mod file is uploaded to your custom folder and mods.json has been updated.");
-                location.reload();
-
+                const data = await response.json();
+        
+                if (response.ok) {
+                    alert("Success! Your mod file is uploaded and mods.json has been updated.");
+                    location.reload();
+                } else {
+                    alert(data.error || "Upload failed.");
+                }
             } catch (err) {
                 console.error(err);
                 alert("Upload failed. Check console for details.");
