@@ -55,12 +55,15 @@ app.get('/api/mods', (req, res) => {
     res.json(modsData);
 });
 
-app.post('/api/upload', upload.single('modFile'), async (req, res) => {
+app.post('/api/upload', upload.fields([
+    { name: 'modFile', maxCount: 1 },
+    { name: 'iconFile', maxCount: 1 }
+]), async (req, res) => {
     const { username, modName, modDesc } = req.body;
-    const file = req.file;
+    const files = req.files;
 
-    if (!username || !modName || !file) {
-        return res.status(400).json({ error: "Missing required fields or file." });
+    if (!username || !modName || !files || !files.modFile) {
+        return res.status(400).json({ error: "Missing required fields or mod file." });
     }
 
     try {
@@ -69,12 +72,23 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
             fs.mkdirSync(userModsDir, { recursive: true });
         }
 
-        const zipFileName = `${modName}.zip`;
-        const localFilePath = path.join(userModsDir, zipFileName);
-        fs.renameSync(file.path, localFilePath);
-
         const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
+
+        const modFile = files.modFile[0];
+        const zipFileName = `${modName}.zip`;
+        const localZipPath = path.join(userModsDir, zipFileName);
+        fs.renameSync(modFile.path, localZipPath);
         const downloadUrl = `${serverBaseUrl}/uploads/${username}/mods/${zipFileName}`;
+
+        let iconUrl = "images/default-icon.png";
+        if (files.iconFile && files.iconFile.length > 0) {
+            const iconFile = files.iconFile[0];
+            const iconExt = path.extname(iconFile.originalname) || '.png';
+            const iconFileName = `${modName}_icon${iconExt}`;
+            const localIconPath = path.join(userModsDir, iconFileName);
+            fs.renameSync(iconFile.path, localIconPath);
+            iconUrl = `${serverBaseUrl}/uploads/${username}/mods/${iconFileName}`;
+        }
 
         let modsData = getModsData();
         if (!modsData.mods) modsData.mods = [];
@@ -83,12 +97,12 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
             name: modName,
             description: modDesc || "",
             download_url: downloadUrl,
-            icon: "images/default-icon.png"
+            icon: iconUrl
         });
 
         saveModsData(modsData);
 
-        res.json({ success: true, download_url: downloadUrl });
+        res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
 
     } catch (err) {
         console.error(err);
