@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="google-site-verification" content="aRd6VR4Px1o3L2ln890_AuADVooCxTUQomVnojTkGwA" />
+    <meta name="google-site-verification" content="83b5d21fa7ed0878" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ali-A Server And Mod Uploader</title>
@@ -817,7 +817,7 @@
                 return;
             }
             const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
-            const favMods = allMods.filter(mod => favorites.includes(mod.name));
+            const favMods = allMods.filter(mod => favorites.notes(mod.name));
             displayMods(favMods, 'favorites-container');
             if (favMods.length === 0) {
                 container.innerHTML = "You haven't favorited any mods yet.";
