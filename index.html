@@ -308,7 +308,8 @@
         <div class="sidebar">
             <h2>Ali-A Online</h2>
             <ul class="sidebar-menu">
-                <li onclick="switchTab('mods-tab')" id="menu-mods" class="active">Browse Mods</li>
+                <li onclick="switchTab('home-tab')" id="menu-home" class="active">Home Menu 🏠</li>
+                <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods</li>
                 <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites ⭐</li>
                 <li onclick="switchTab('upload-tab')" id="menu-upload" class="hidden">Upload Mod</li>
                 <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods</li>
@@ -317,9 +318,17 @@
         </div>
 
         <div class="main-content">
-            <h1 id="page-title">Browse Available Mods</h1>
+            <h1 id="page-title">Ali-A Online Home Menu</h1>
 
-            <div id="mods-tab" class="tab-content">
+            <div id="home-tab" class="tab-content">
+                <div class="panel">
+                    <h3>Welcome!</h3>
+                    <p style="font-size: 16px; color: #00d2ff; line-height: 1.5;">Hello welcome to the AliA-Online Home Menu Page made by Ethantobot11 Ali Alafandy And Brenninho[cite: 1]</p>
+                    <button onclick="switchTab('mods-tab')">Browse Mods Now</button>
+                </div>
+            </div>
+
+            <div id="mods-tab" class="tab-content hidden">
                 <div class="search-container">
                     <input type="text" id="search-input" placeholder="Search mods by name..." oninput="filterMods()">
                 </div>
@@ -434,7 +443,10 @@
 
             document.getElementById(tabId).classList.remove('hidden');
 
-            if (tabId === 'mods-tab') {
+            if (tabId === 'home-tab') {
+                document.getElementById('menu-home').classList.add('active');
+                document.getElementById('page-title').innerText = "Ali-A Online Home Menu";
+            } else if (tabId === 'mods-tab') {
                 document.getElementById('menu-mods').classList.add('active');
                 document.getElementById('page-title').innerText = "Browse Available Mods";
                 loadMods();
@@ -474,7 +486,7 @@
                 document.getElementById('auth-panel').classList.remove('hidden');
                 document.getElementById('account-panel').classList.add('hidden');
                 if (!document.getElementById('upload-tab').classList.contains('hidden')) {
-                    switchTab('mods-tab');
+                    switchTab('home-tab');
                 }
             }
         }
@@ -505,7 +517,7 @@
                     localStorage.setItem('alia_logged_in_user', data.username);
                     alert(`Welcome, ${data.username}!`);
                     checkAuth();
-                    switchTab('mods-tab');
+                    switchTab('home-tab');
                 } else {
                     alert(data.error || "Google authentication failed.");
                 }
@@ -537,7 +549,7 @@
                         localStorage.setItem('alia_logged_in_user', data.username);
                         alert(`Welcome, ${data.username}!`);
                         checkAuth();
-                        switchTab('mods-tab');
+                        switchTab('home-tab');
                     } else {
                         alert(data.error || "Discord authentication failed.");
                     }
@@ -578,7 +590,7 @@
                     localStorage.setItem('alia_logged_in_user', user);
                     alert(`Account created successfully! Welcome, ${user}.`);
                     checkAuth();
-                    switchTab('mods-tab');
+                    switchTab('home-tab');
                 } else {
                     alert(regData.error || "Registration failed.");
                 }
@@ -603,7 +615,7 @@
                     localStorage.setItem('alia_logged_in_user', user);
                     alert(`Welcome back, ${user}!`);
                     checkAuth();
-                    switchTab('mods-tab');
+                    switchTab('home-tab');
                 } else {
                     alert(data.error || "Invalid username or password.");
                 }
@@ -641,7 +653,7 @@
         function logout() {
             localStorage.removeItem('alia_logged_in_user');
             checkAuth();
-            switchTab('mods-tab');
+            switchTab('home-tab');
         }
 
         async function handleUpdateAccount() {
