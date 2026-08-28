@@ -50,6 +50,27 @@ app.post('/api/login', (req, res) => {
     return res.status(200).json({ success: true, message: "Login successful." });
 });
 
+app.post('/api/update-account', (req, res) => {
+    const { oldUsername, newUsername, newPassword } = req.body;
+    if (!oldUsername || !newUsername) {
+        return res.status(400).json({ error: "Old and new usernames are required." });
+    }
+    let users = getUsers();
+    const userIndex = users.findIndex(u => u.username === oldUsername);
+    if (userIndex === -1) {
+        return res.status(404).json({ error: "User not found." });
+    }
+    if (newUsername !== oldUsername && users.find(u => u.username === newUsername)) {
+        return res.status(400).json({ error: "Username already taken." });
+    }
+    users[userIndex].username = newUsername;
+    if (newPassword && newPassword.trim() !== "") {
+        users[userIndex].password = newPassword;
+    }
+    saveUsers(users);
+    return res.json({ success: true, message: "Account updated successfully." });
+});
+
 app.get('/api/mods', (req, res) => {
     const modsData = getModsData();
     res.json(modsData);
@@ -110,6 +131,41 @@ app.post('/api/upload', upload.any(), async (req, res) => {
         console.error("UPLOAD CRASH:", err);
         res.status(500).json({ error: err.message });
     }
+});
+
+app.post('/api/delete-mod', (req, res) => {
+    const { username, modName } = req.body;
+    if (!username || !modName) {
+        return res.status(400).json({ error: "Username and mod name are required." });
+    }
+
+    let modsData = getModsData();
+    if (!modsData.mods) modsData.mods = [];
+
+    const modIndex = modsData.mods.findIndex(m => m.name === modName && m.download_url.includes(`/uploads/${username}/`));
+    if (modIndex === -1) {
+        return res.status(404).json({ error: "Mod not found or unauthorized." });
+    }
+
+    try {
+        const userModsDir = path.join(__dirname, 'uploads', username, 'mods');
+        if (fs.existsSync(userModsDir)) {
+            const files = fs.readdirSync(userModsDir);
+            files.forEach(file => {
+                if (file.startsWith(modName)) {
+                    const filePath = path.join(userModsDir, file);
+                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Error deleting files from disk:", err);
+    }
+
+    modsData.mods.splice(modIndex, 1);
+    saveModsData(modsData);
+
+    return res.json({ success: true, message: "Mod deleted successfully." });
 });
 
 const PORT = process.env.PORT || 3000;
