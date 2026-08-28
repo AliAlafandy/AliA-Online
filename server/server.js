@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(cors());
@@ -239,6 +240,102 @@ app.post('/api/delete-mod', (req, res) => {
     saveModsData(modsData);
 
     return res.json({ success: true, message: "Mod deleted successfully." });
+});
+
+app.post('/api/auth/google', async (req, res) => {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: "Google token required." });
+
+    try {
+        const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+        const googleUser = await googleRes.json();
+
+        if (!googleRes.ok || !googleUser.email) {
+            return res.status(400).json({ error: "Invalid Google token." });
+        }
+
+        const email = googleUser.email;
+        const baseUsername = googleUser.name || email.split('@')[0];
+        let users = getUsers();
+        
+        let user = users.find(u => u.email === email || u.username.toLowerCase() === baseUsername.toLowerCase());
+        
+        if (!user) {
+            let username = baseUsername;
+            let counter = 1;
+            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                username = `${baseUsername}${counter++}`;
+            }
+            user = { username, email, password: "" };
+            users.push(user);
+            saveUsers(users);
+        }
+
+        return res.json({ success: true, username: user.username });
+    } catch (err) {
+        console.error("Google Auth Error:", err);
+        return res.status(500).json({ error: "Google authentication failed." });
+    }
+});
+
+app.post('/api/auth/discord', async (req, res) => {
+    const { code, redirectUri } = req.body;
+    if (!code) return res.status(400).json({ error: "Discord auth code required." });
+
+    const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+    const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+
+    try {
+        const tokenParams = new URLSearchParams({
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectUri,
+        });
+
+        const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
+            method: 'POST',
+            body: tokenParams,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        });
+        const tokenData = await tokenRes.json();
+
+        if (!tokenRes.ok) {
+            return res.status(400).json({ error: "Failed to exchange Discord code." });
+        }
+
+        const userRes = await fetch('https://discord.com/api/users/@me', {
+            headers: { authorization: `${tokenData.token_type} ${tokenData.access_token}` },
+        });
+        const discordUser = await userRes.json();
+
+        if (!userRes.ok) {
+            return res.status(400).json({ error: "Failed to fetch Discord user profile." });
+        }
+
+        const email = discordUser.email;
+        const baseUsername = discordUser.username;
+        let users = getUsers();
+
+        let user = users.find(u => u.email === email || u.username.toLowerCase() === baseUsername.toLowerCase());
+
+        if (!user) {
+            let username = baseUsername;
+            let counter = 1;
+            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                username = `${baseUsername}${counter++}`;
+            }
+            user = { username, email: email || "", password: "" };
+            users.push(user);
+            saveUsers(users);
+        }
+
+        return res.json({ success: true, username: user.username });
+    } catch (err) {
+        console.error("Discord Auth Error:", err);
+        return res.status(500).json({ error: "Discord authentication failed." });
+    }
 });
 
 const PORT = process.env.PORT || 3000;
