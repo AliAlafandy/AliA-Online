@@ -386,6 +386,7 @@
                             </div>
                             <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signin_with" data-size="large"></div>
                             <button class="btn-discord" onclick="handleDiscordSignIn()">Login with Discord</button>
+                            <button class="btn-github" onclick="handleGitHubSignIn()">Login with GitHub</button>
                         </div>
 
                         <p>Don't have an account? <span class="toggle-link" onclick="switchView('register')">Register here</span></p>
@@ -532,6 +533,12 @@
             const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
             const scope = encodeURIComponent('identify email');
             window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+        }
+
+        function handleGitHubSignIn() {
+            const clientId = 'Ov23li6a0G1oxaCwPtGk';
+            const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
+            window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
         }
 
         async function checkDiscordCallback() {
