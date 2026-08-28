@@ -32,11 +32,21 @@ function saveModsData(data) {
 
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
 
+app.get('/api/check-username', (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: "Username required." });
+    const users = getUsers();
+    const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    return res.json({ exists });
+});
+
 app.post('/api/register', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Username and password required." });
     let users = getUsers();
-    if (users.find(u => u.username === username)) return res.status(400).json({ error: "Username already taken." });
+    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+        return res.status(400).json({ error: "Username already taken." });
+    }
     users.push({ username, password });
     saveUsers(users);
     return res.status(200).json({ success: true, message: "Registered successfully." });
@@ -60,7 +70,7 @@ app.post('/api/update-account', (req, res) => {
     if (userIndex === -1) {
         return res.status(404).json({ error: "User not found." });
     }
-    if (newUsername !== oldUsername && users.find(u => u.username === newUsername)) {
+    if (newUsername !== oldUsername && users.find(u => u.username.toLowerCase() === newUsername.toLowerCase())) {
         return res.status(400).json({ error: "Username already taken." });
     }
     users[userIndex].username = newUsername;
@@ -116,20 +126,77 @@ app.post('/api/upload', upload.any(), async (req, res) => {
         let modsData = getModsData();
         if (!modsData.mods) modsData.mods = [];
 
-        modsData.mods.push({
+        const existingIndex = modsData.mods.findIndex(m => m.name === modName);
+        const now = new Date().getTime();
+
+        const newModObj = {
             name: modName,
             description: modDesc || "",
             download_url: downloadUrl,
-            icon: iconUrl
-        });
+            icon: iconUrl,
+            updated_at: now
+        };
+
+        if (existingIndex !== -1) {
+            modsData.mods[existingIndex] = newModObj;
+        } else {
+            modsData.mods.push(newModObj);
+        }
 
         saveModsData(modsData);
-
         res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
 
     } catch (err) {
         console.error("UPLOAD CRASH:", err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
+    const { username, modName } = req.body;
+    const file = req.file;
+
+    if (!username || !modName || !file) {
+        return res.status(400).json({ error: "Missing required fields or file." });
+    }
+
+    let modsData = getModsData();
+    if (!modsData.mods) modsData.mods = [];
+
+    const modIndex = modsData.mods.findIndex(m => m.name === modName);
+    if (modIndex === -1) {
+        return res.status(404).json({ error: "Mod not found." });
+    }
+
+    const mod = modsData.mods[modIndex];
+    const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
+    const isOwner = mod.download_url && mod.download_url.includes(`/uploads/${username}/`);
+
+    if (!isMod && !isOwner) {
+        return res.status(403).json({ error: "Unauthorized to update this mod." });
+    }
+
+    const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+    const ownerName = match ? match[1] : username;
+
+    try {
+        const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
+        if (!fs.existsSync(userModsDir)) {
+            fs.mkdirSync(userModsDir, { recursive: true });
+        }
+
+        const zipFileName = `${modName}.zip`;
+        const targetPath = path.join(userModsDir, zipFileName);
+        fs.copyFileSync(file.path, targetPath);
+        fs.unlinkSync(file.path);
+
+        modsData.mods[modIndex].updated_at = new Date().getTime();
+        saveModsData(modsData);
+
+        return res.json({ success: true, message: "Mod file updated successfully." });
+    } catch (err) {
+        console.error("UPDATE MOD FILE ERROR:", err);
+        return res.status(500).json({ error: err.message });
     }
 });
 
@@ -142,13 +209,19 @@ app.post('/api/delete-mod', (req, res) => {
     let modsData = getModsData();
     if (!modsData.mods) modsData.mods = [];
 
-    const modIndex = modsData.mods.findIndex(m => m.name === modName && m.download_url.includes(`/uploads/${username}/`));
+    const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
+    const modIndex = modsData.mods.findIndex(m => m.name === modName && (isMod || m.download_url.includes(`/uploads/${username}/`)));
+    
     if (modIndex === -1) {
         return res.status(404).json({ error: "Mod not found or unauthorized." });
     }
 
+    const mod = modsData.mods[modIndex];
+    const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+    const ownerName = match ? match[1] : username;
+
     try {
-        const userModsDir = path.join(__dirname, 'uploads', username, 'mods');
+        const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
         if (fs.existsSync(userModsDir)) {
             const files = fs.readdirSync(userModsDir);
             files.forEach(file => {
