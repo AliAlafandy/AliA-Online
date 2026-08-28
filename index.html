@@ -327,11 +327,11 @@
             <h2>Ali-A Online</h2>
             <ul class="sidebar-menu">
                 <li onclick="switchTab('home-tab')" id="menu-home" class="active">Home Menu 🏠</li>
-                <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods</li>
+                <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods 🔍</li>
                 <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites ⭐</li>
-                <li onclick="switchTab('upload-tab')" id="menu-upload" class="hidden">Upload Mod</li>
-                <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods</li>
-                <li onclick="switchTab('account-tab')" id="menu-account">Your Account</li>
+                <li onclick="switchTab('upload-tab')" id="menu-upload" class="hidden">Upload Mod ⬆️</li>
+                <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods 🗂</li>
+                <li onclick="switchTab('account-tab')" id="menu-account">Your Account 👤</li>
             </ul>
         </div>
 
@@ -340,8 +340,8 @@
 
             <div id="home-tab" class="tab-content">
                 <div class="panel">
-                    <h3>Welcome!</h3>
-                    <p style="font-size: 16px; color: #00d2ff; line-height: 1.5;">Hello and Welcome to the AliA-Online</p> <!-- [cite: 1] -->
+                    <h3>Hello <span id="current-user" style="color: #00d2ff; font-weight: bold;"></span>!</h3>
+                    <p style="font-size: 16px; color: #00d2ff; line-height: 1.5;">Welcome to the AliA-Online</p> <!-- [cite: 1] -->
                     <button onclick="switchTab('mods-tab')">Browse Mods Now</button>
                 </div>
             </div>
