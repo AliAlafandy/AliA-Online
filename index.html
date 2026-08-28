@@ -97,7 +97,7 @@
             box-shadow: 0 0 15px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 136, 255, 0.1);
         }
 
-        input, button {
+        input, button, select {
             padding: 12px;
             margin: 10px 0;
             width: 85%;
@@ -108,9 +108,10 @@
             font-size: 14px;
             outline: none;
             transition: all 0.3s ease;
+            box-sizing: border-box;
         }
 
-        input:focus {
+        input:focus, select:focus {
             border-color: #00d2ff;
             box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
         }
@@ -123,6 +124,8 @@
             border: none;
             box-shadow: 0 0 10px rgba(0, 136, 255, 0.5);
             transition: all 0.3s ease;
+            width: auto;
+            padding: 12px 20px;
         }
 
         button:hover {
@@ -149,13 +152,12 @@
         }
         .search-container input {
             width: 100%;
-            box-sizing: border-box;
             background: #030712;
             border: 1px solid #00d2ff;
             box-shadow: 0 0 8px rgba(0, 210, 255, 0.2);
         }
 
-        #mods-container, #my-mods-container {
+        #mods-container, #my-mods-container, #favorites-container {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -232,6 +234,44 @@
             color: #ffffff;
             box-shadow: 0 0 12px rgba(255, 68, 68, 0.9);
         }
+
+        .favorite-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 210, 255, 0.2);
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        .favorite-btn.favorited {
+            background: #00d2ff;
+            color: #000000;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
+        }
+
+        .update-tag {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            background-color: #ff0055;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 4px;
+            box-shadow: 0 0 8px rgba(255, 0, 85, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -241,6 +281,7 @@
             <h2>Ali-A Online</h2>
             <ul class="sidebar-menu">
                 <li onclick="switchTab('mods-tab')" id="menu-mods" class="active">Browse Mods</li>
+                <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites ⭐</li>
                 <li onclick="switchTab('upload-tab')" id="menu-upload">Upload Mod</li>
                 <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods</li>
                 <li onclick="switchTab('account-tab')" id="menu-account">Your Account</li>
@@ -255,6 +296,10 @@
                     <input type="text" id="search-input" placeholder="Search mods by name..." oninput="filterMods()">
                 </div>
                 <div id="mods-container">Loading mods...</div>
+            </div>
+
+            <div id="favorites-tab" class="tab-content hidden">
+                <div id="favorites-container">Please login to view your favorite mods.</div>
             </div>
 
             <div id="upload-tab" class="tab-content hidden">
@@ -287,6 +332,17 @@
                     <input type="file" id="mod-file" accept=".zip"><br>
                     <button onclick="uploadModToServer()">Upload Mod & Icon</button>
                 </div>
+
+                <div class="panel hidden" id="update-mod-panel">
+                    <h3>Update Existing Mod (.zip)</h3>
+                    <p>Select one of your mods to upload a new file version.</p>
+                    <select id="update-mod-select">
+                        <option value="">-- Select Your Mod --</option>
+                    </select><br>
+                    <label style="font-size: 13px; color: #00d2ff;">New Mod .zip File:</label><br>
+                    <input type="file" id="update-mod-file" accept=".zip"><br>
+                    <button onclick="updateExistingMod()">Upload New Version</button>
+                </div>
             </div>
 
             <div id="my-mods-tab" class="tab-content hidden">
@@ -318,6 +374,10 @@
                 document.getElementById('menu-mods').classList.add('active');
                 document.getElementById('page-title').innerText = "Browse Available Mods";
                 loadMods();
+            } else if (tabId === 'favorites-tab') {
+                document.getElementById('menu-favorites').classList.add('active');
+                document.getElementById('page-title').innerText = "Your Favorite Mods ⭐";
+                loadFavorites();
             } else if (tabId === 'upload-tab') {
                 document.getElementById('menu-upload').classList.add('active');
                 document.getElementById('page-title').innerText = "Upload Your Mod";
@@ -340,11 +400,14 @@
             if (loggedUser) {
                 document.getElementById('auth-panel').classList.add('hidden');
                 document.getElementById('upload-panel').classList.remove('hidden');
+                document.getElementById('update-mod-panel').classList.remove('hidden');
                 document.getElementById('current-user').innerText = loggedUser;
                 document.getElementById('account-panel').classList.remove('hidden');
+                loadUserModsForDropdown();
             } else {
                 document.getElementById('auth-panel').classList.remove('hidden');
                 document.getElementById('upload-panel').classList.add('hidden');
+                document.getElementById('update-mod-panel').classList.add('hidden');
                 document.getElementById('account-panel').classList.add('hidden');
             }
         }
@@ -360,24 +423,33 @@
         }
 
         async function handleRegister() {
-            const user = document.getElementById('reg-username').value.trim();
+            let user = document.getElementById('reg-username').value.trim();
             const pass = document.getElementById('reg-password').value.trim();
             if (!user || !pass) { alert("Please fill in both fields."); return; }
     
             try {
-                const response = await fetch('https://alia-server.onrender.com/api/register', {
+                let response = await fetch(`https://alia-server.onrender.com/api/check-username?username=${encodeURIComponent(user)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.exists) {
+                        user = user + "1";
+                        alert(`That username was taken! Your username has automatically been set to: ${user}`);
+                    }
+                }
+
+                const regResponse = await fetch('https://alia-server.onrender.com/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass })
                 });
-                const data = await response.json();
-                if (response.ok) {
+                const regData = await regResponse.json();
+                if (regResponse.ok) {
                     localStorage.setItem('alia_logged_in_user', user);
                     alert(`Account created successfully! Welcome, ${user}.`);
                     checkAuth();
                     switchTab('mods-tab');
                 } else {
-                    alert(data.error || "Registration failed.");
+                    alert(regData.error || "Registration failed.");
                 }
             } catch (err) {
                 alert("Network error during registration.");
@@ -417,13 +489,24 @@
 
         async function handleUpdateAccount() {
             const oldUser = localStorage.getItem('alia_logged_in_user');
-            const newUser = document.getElementById('update-username').value.trim();
+            let newUser = document.getElementById('update-username').value.trim();
             const newPass = document.getElementById('update-password').value.trim();
 
             if (!oldUser) { alert("You must be logged in."); return; }
             if (!newUser) { alert("Username cannot be empty."); return; }
 
             try {
+                if (newUser !== oldUser) {
+                    const checkRes = await fetch(`https://alia-server.onrender.com/api/check-username?username=${encodeURIComponent(newUser)}`);
+                    if (checkRes.ok) {
+                        const checkData = await checkRes.json();
+                        if (checkData.exists) {
+                            newUser = newUser + "1";
+                            alert(`That username is already taken. It has been automatically updated to: ${newUser}`);
+                        }
+                    }
+                }
+
                 const response = await fetch('https://alia-server.onrender.com/api/update-account', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -493,20 +576,41 @@
                 .then(res => res.json())
                 .then(data => {
                     allMods = data.mods || [];
-                    displayMods(allMods);
+                    displayMods(allMods, 'mods-container');
                 }).catch(() => document.getElementById('mods-container').innerText = "Failed to load mods.");
         }
 
-        function displayMods(modsArray) {
-            const container = document.getElementById('mods-container');
+        function displayMods(modsArray, containerId) {
+            const container = document.getElementById(containerId);
             container.innerHTML = '';
             if(!modsArray || modsArray.length === 0) {
                 container.innerHTML = "No mods found.";
                 return;
             }
+
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
+            const now = new Date().getTime();
+            const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
+
             modsArray.forEach(mod => {
+                const isFavorited = favorites.includes(mod.name);
+                let showUpdateTag = false;
+                if (mod.updated_at && (now - mod.updated_at < twoDaysMs)) {
+                    showUpdateTag = true;
+                }
+
+                const canDelete = loggedUser && (
+                    loggedUser === 'Ethantobot11' || 
+                    loggedUser === 'Ali Alafandy' || 
+                    (mod.download_url && mod.download_url.includes(`/uploads/${loggedUser}/`))
+                );
+
                 container.innerHTML += `
                     <div class="mod-card">
+                        ${loggedUser ? `<button class="favorite-btn ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite('${mod.name}')" title="Favorite">⭐</button>` : ''}
+                        ${showUpdateTag ? '<div class="update-tag">UPDATE</div>' : ''}
+                        ${canDelete ? `<button class="delete-btn" onclick="confirmDeleteMod('${mod.name}')" title="Delete Mod">🗑️</button>` : ''}
                         <img src="${mod.icon || 'images/default-icon.png'}" alt="${mod.name}" class="mod-icon">
                         <h3>${mod.name}</h3>
                         <p>${mod.description || ''}</p>
@@ -516,10 +620,44 @@
             });
         }
 
+        function toggleFavorite(modName) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            if (!loggedUser) return;
+            let favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
+            
+            if (favorites.includes(modName)) {
+                favorites = favorites.filter(name => name !== modName);
+            } else {
+                favorites.push(modName);
+            }
+            localStorage.setItem('alia_favorites_' + loggedUser, JSON.stringify(favorites));
+            
+            if (!document.getElementById('mods-tab').classList.contains('hidden')) {
+                displayMods(allMods, 'mods-container');
+            } else if (!document.getElementById('favorites-tab').classList.contains('hidden')) {
+                loadFavorites();
+            }
+        }
+
+        function loadFavorites() {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            const container = document.getElementById('favorites-container');
+            if (!loggedUser) {
+                container.innerHTML = "Please login to view your favorite mods.";
+                return;
+            }
+            const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
+            const favMods = allMods.filter(mod => favorites.includes(mod.name));
+            displayMods(favMods, 'favorites-container');
+            if (favMods.length === 0) {
+                container.innerHTML = "You haven't favorited any mods yet.";
+            }
+        }
+
         function filterMods() {
             const query = document.getElementById('search-input').value.toLowerCase();
             const filtered = allMods.filter(mod => mod.name.toLowerCase().includes(query));
-            displayMods(filtered);
+            displayMods(filtered, 'mods-container');
         }
 
         function loadMyMods() {
@@ -542,22 +680,67 @@
                         return;
                     }
 
-                    userMods.forEach(mod => {
-                        container.innerHTML += `
-                            <div class="mod-card">
-                                <button class="delete-btn" onclick="confirmDeleteMod('${mod.name}')" title="Delete Mod">🗑️</button>
-                                <img src="${mod.icon || 'images/default-icon.png'}" alt="${mod.name}" class="mod-icon">
-                                <h3>${mod.name}</h3>
-                                <p>${mod.description || ''}</p>
-                                <a href="${mod.download_url}" class="download-btn" target="_blank">Download Mod</a>
-                            </div>
-                        `;
-                    });
+                    displayMods(userMods, 'my-mods-container');
                 }).catch(() => container.innerText = "Error loading your mods.");
         }
 
+        async function loadUserModsForDropdown() {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            const select = document.getElementById('update-mod-select');
+            select.innerHTML = '<option value="">-- Select Your Mod --</option>';
+            if (!loggedUser) return;
+
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/mods');
+                const data = await res.json();
+                const mods = data.mods || [];
+                const isMod = (loggedUser === 'Ethantobot11' || loggedUser === 'Ali Alafandy');
+                const userMods = mods.filter(mod => isMod || (mod.download_url && mod.download_url.includes(`/uploads/${loggedUser}/`)));
+                
+                userMods.forEach(mod => {
+                    select.innerHTML += `<option value="${mod.name}">${mod.name}</option>`;
+                });
+            } catch (err) {
+                console.error("Could not load user mods for dropdown");
+            }
+        }
+
+        async function updateExistingMod() {
+            const user = localStorage.getItem('alia_logged_in_user');
+            const modName = document.getElementById('update-mod-select').value;
+            const fileInput = document.getElementById('update-mod-file');
+
+            if (!modName || fileInput.files.length === 0) {
+                alert("Please select a mod and choose a new .zip file version.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('username', user);
+            formData.append('modName', modName);
+            formData.append('modFile', fileInput.files[0]);
+
+            try {
+                alert("Uploading updated mod file...");
+                const response = await fetch('https://alia-server.onrender.com/api/update-mod-file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("Mod updated successfully! An 'UPDATE' tag has been added for 2 days.");
+                    fileInput.value = '';
+                    switchTab('mods-tab');
+                } else {
+                    alert(data.error || "Failed to update mod file.");
+                }
+            } catch (err) {
+                alert("Network error updating mod file.");
+            }
+        }
+
         function confirmDeleteMod(modName) {
-            const confirmed = confirm(`Are you sure you want to delete your mod "${modName}"? This action cannot be undone.`);
+            const confirmed = confirm(`Are you sure you want to delete the mod "${modName}"?`);
             if (confirmed) {
                 deleteMod(modName);
             }
@@ -574,6 +757,7 @@
                 const data = await response.json();
                 if (response.ok) {
                     alert("Mod deleted successfully.");
+                    loadMods();
                     loadMyMods();
                 } else {
                     alert(data.error || "Failed to delete mod.");
