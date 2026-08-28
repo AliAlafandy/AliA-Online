@@ -515,7 +515,7 @@
         }
 
         function handleDiscordSignIn() {
-            const clientId = '1541969940310138890';
+            const clientId = '1541971598008000613';
             const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
             const scope = encodeURIComponent('identify email');
             window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
