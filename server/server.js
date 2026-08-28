@@ -76,12 +76,14 @@ app.post('/api/upload', upload.any(), async (req, res) => {
         files.forEach(file => {
             if (file.fieldname === 'modFile' || file.originalname.endsWith('.zip')) {
                 const zipFileName = `${modName}.zip`;
-                fs.renameSync(file.path, path.join(userModsDir, zipFileName));
+                fs.copyFileSync(file.path, path.join(userModsDir, zipFileName));
+                fs.unlinkSync(file.path);
                 downloadUrl = `${serverBaseUrl}/uploads/${username}/mods/${zipFileName}`;
             } else if (file.fieldname === 'iconFile' || file.mimetype.startsWith('image/')) {
                 const iconExt = path.extname(file.originalname) || '.png';
                 const iconFileName = `${modName}_icon${iconExt}`;
-                fs.renameSync(file.path, path.join(userModsDir, iconFileName));
+                fs.copyFileSync(file.path, path.join(userModsDir, iconFileName));
+                fs.unlinkSync(file.path);
                 iconUrl = `${serverBaseUrl}/uploads/${username}/mods/${iconFileName}`;
             }
         });
@@ -105,7 +107,7 @@ app.post('/api/upload', upload.any(), async (req, res) => {
         res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
 
     } catch (err) {
-        console.error(err);
+        console.error("UPLOAD CRASH:", err);
         res.status(500).json({ error: err.message });
     }
 });
