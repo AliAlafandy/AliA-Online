@@ -19,13 +19,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 function getUsers() {
     if (!fs.existsSync(USERS_FILE)) return [];
-    try {
-        return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
-    } catch (e) {
-        return [];
-    }
+    try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch (e) { return []; }
 }
-
 function saveUsers(users) {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
@@ -34,28 +29,19 @@ const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
 
 app.post('/api/register', (req, res) => {
     const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: "Username and password are required." });
-    }
-    
+    if (!username || !password) return res.status(400).json({ error: "Username and password required." });
     let users = getUsers();
-    if (users.find(u => u.username === username)) {
-        return res.status(400).json({ error: "Username already taken." });
-    }
-
+    if (users.find(u => u.username === username)) return res.status(400).json({ error: "Username already taken." });
     users.push({ username, password });
     saveUsers(users);
-    return res.status(200).json({ success: true, message: "User registered successfully." });
+    return res.status(200).json({ success: true, message: "Registered successfully." });
 });
 
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     let users = getUsers();
     const user = users.find(u => u.username === username && u.password === password);
-
-    if (!user) {
-        return res.status(400).json({ error: "Invalid username or password." });
-    }
+    if (!user) return res.status(400).json({ error: "Invalid username or password." });
     return res.status(200).json({ success: true, message: "Login successful." });
 });
 
@@ -75,7 +61,6 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
 
         const zipFileName = `${modName}.zip`;
         const localFilePath = path.join(userModsDir, zipFileName);
-        
         fs.renameSync(file.path, localFilePath);
 
         const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
@@ -87,6 +72,11 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
                 'User-Agent': 'AliA-Mod-Server'
             }
         });
+        
+        if (!jsonResponse.ok) {
+            throw new Error("Failed to fetch mods.json from GitHub. Check your repository owner and token.");
+        }
+
         const jsonData = await jsonResponse.json();
         const sha = jsonData.sha;
         
@@ -96,7 +86,7 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
             name: modName,
             description: modDesc || "",
             download_url: downloadUrl,
-            icon: "images/alafandySetting.png"
+            icon: "images/default-icon.png"
         });
 
         const updateRes = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/mods.json`, {
@@ -107,7 +97,7 @@ app.post('/api/upload', upload.single('modFile'), async (req, res) => {
                 'User-Agent': 'AliA-Mod-Server'
             },
             body: JSON.stringify({
-                message: `Auto-update mods.json with server-hosted mod: ${modName}`,
+                message: `Auto-update mods.json strings for: ${modName}`,
                 content: Buffer.from(JSON.stringify(decodedContent, null, 2)).toString('base64'),
                 sha: sha
             })
