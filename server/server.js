@@ -338,5 +338,82 @@ app.post('/api/auth/discord', async (req, res) => {
     }
 });
 
+app.post('/api/auth/github', async (req, res) => {
+    const { code, redirectUri } = req.body;
+    if (!code) return res.status(400).json({ error: "GitHub auth code required." });
+
+    const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+    const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+
+    try {
+        const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                code: code,
+                redirect_uri: redirectUri
+            })
+        });
+        const tokenData = await tokenRes.json();
+
+        if (!tokenRes.ok || tokenData.error) {
+            return res.status(400).json({ error: tokenData.error_description || "Failed to exchange GitHub code." });
+        }
+        
+        const userRes = await fetch('https://api.github.com/user', {
+            headers: {
+                'Authorization': `Bearer ${tokenData.access_token}`,
+                'User-Agent': 'Ali-A-App'
+            },
+        });
+        const githubUser = await userRes.json();
+
+        if (!userRes.ok) {
+            return res.status(400).json({ error: "Failed to fetch GitHub user profile." });
+        }
+
+        let email = githubUser.email;
+        if (!email) {
+            const emailRes = await fetch('https://api.github.com/user/emails', {
+                headers: {
+                    'Authorization': `Bearer ${tokenData.access_token}`,
+                    'User-Agent': 'Ali-A-App'
+                },
+            });
+            if (emailRes.ok) {
+                const emails = await emailRes.json();
+                const primaryEmailObj = emails.find(e => e.primary && e.verified);
+                if (primaryEmailObj) email = primaryEmailObj.email;
+            }
+        }
+
+        const baseUsername = githubUser.login || githubUser.name || "GitHubUser";
+        let users = getUsers();
+
+        let user = users.find(u => (email && u.email === email) || u.username.toLowerCase() === baseUsername.toLowerCase());
+
+        if (!user) {
+            let username = baseUsername;
+            let counter = 1;
+            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+                username = `${baseUsername}${counter++}`;
+            }
+            user = { username, email: email || "", password: "" };
+            users.push(user);
+            saveUsers(users);
+        }
+
+        return res.json({ success: true, username: user.username });
+    } catch (err) {
+        console.error("GitHub Auth Error:", err);
+        return res.status(500).json({ error: "GitHub authentication failed." });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
