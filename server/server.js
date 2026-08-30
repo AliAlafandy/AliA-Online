@@ -63,6 +63,32 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+app.post('/api/auth/set-username', async (req, res) => {
+    const { email, username } = req.body;
+    if (!email || !username) {
+        return res.status(400).json({ error: "Email and username are required." });
+    }
+
+    try {
+        const taken = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+        if (taken) {
+            return res.status(400).json({ error: "Username is already taken." });
+        }
+
+        let user = await User.findOne({ email });
+        if (user) {
+            user.username = username;
+            await user.save();
+        } else {
+            user = await User.create({ username, email, password: "" });
+        }
+
+        return res.json({ success: true, username: user.username });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Username and password required." });
@@ -271,13 +297,14 @@ app.post('/api/auth/google', async (req, res) => {
         
         let user = await User.findOne({ $or: [{ email }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
         
+        let user = await User.findOne({ email });
+        
         if (!user) {
-            let username = baseUsername;
-            let counter = 1;
-            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
-                username = `${baseUsername}${counter++}`;
-            }
-            user = await User.create({ username, email, password: "" });
+            return res.json({ 
+                needsUsernameSetup: true, 
+                email: email, 
+                suggestedUsername: baseUsername 
+            });
         }
 
         return res.json({ success: true, username: user.username });
@@ -329,12 +356,11 @@ app.post('/api/auth/discord', async (req, res) => {
         let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
 
         if (!user) {
-            let username = baseUsername;
-            let counter = 1;
-            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
-                username = `${baseUsername}${counter++}`;
-            }
-            user = await User.create({ username, email: email || "", password: "" });
+            return res.json({ 
+                needsUsernameSetup: true, 
+                email: email || `${discordUser.id}@discord.placeholder`, 
+                suggestedUsername: baseUsername 
+            });
         }
 
         return res.json({ success: true, username: user.username });
@@ -388,12 +414,11 @@ app.post('/api/auth/github', async (req, res) => {
         let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
 
         if (!user) {
-            let username = baseUsername;
-            let counter = 1;
-            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
-                username = `${baseUsername}${counter++}`;
-            }
-            user = await User.create({ username, email: email || "", password: "" });
+            return res.json({ 
+                needsUsernameSetup: true, 
+                email: email || `${githubUser.id}@github.placeholder`, 
+                suggestedUsername: baseUsername 
+            });
         }
 
         return res.json({ success: true, username: user.username });
