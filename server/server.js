@@ -6,10 +6,14 @@ const path = require('path');
 const multer = require('multer');
 const fetch = require('node-fetch');
 const mongoose = require('mongoose');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const BUCKET_NAME = 'mods-bucket';
 
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB successfully'))
@@ -30,8 +34,6 @@ const modSchema = new mongoose.Schema({
     updated_at: { type: Number, required: true }
 });
 const Mod = mongoose.model('Mod', modSchema);
-
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
 
@@ -119,29 +121,37 @@ app.post('/api/upload', upload.any(), async (req, res) => {
     }
 
     try {
-        const userModsDir = path.join(__dirname, 'uploads', username, 'mods');
-        if (!fs.existsSync(userModsDir)) {
-            fs.mkdirSync(userModsDir, { recursive: true });
-        }
-
-        const serverBaseUrl = `${req.protocol}://${req.get('host')}`;
         let downloadUrl = "";
         let iconUrl = "images/default-icon.png";
 
-        files.forEach(file => {
+        for (const file of files) {
+            const fileBuffer = fs.readFileSync(file.path);
+
             if (file.fieldname === 'modFile' || file.originalname.endsWith('.zip')) {
-                const zipFileName = `${modName}.zip`;
-                fs.copyFileSync(file.path, path.join(userModsDir, zipFileName));
-                fs.unlinkSync(file.path);
-                downloadUrl = `${serverBaseUrl}/uploads/${username}/mods/${zipFileName}`;
+                const filePath = `${username}/${modName}.zip`;
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
+                    contentType: 'application/zip',
+                    upsert: true
+                });
+                if (error) throw error;
+
+                const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                downloadUrl = data.publicUrl;
             } else if (file.fieldname === 'iconFile' || file.mimetype.startsWith('image/')) {
                 const iconExt = path.extname(file.originalname) || '.png';
-                const iconFileName = `${modName}_icon${iconExt}`;
-                fs.copyFileSync(file.path, path.join(userModsDir, iconFileName));
-                fs.unlinkSync(file.path);
-                iconUrl = `${serverBaseUrl}/uploads/${username}/mods/${iconFileName}`;
+                const filePath = `${username}/${modName}_icon${iconExt}`;
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
+                    contentType: file.mimetype,
+                    upsert: true
+                });
+                if (error) throw error;
+
+                const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
+                iconUrl = data.publicUrl;
             }
-        });
+
+            fs.unlinkSync(file.path);
+        }
 
         if (!downloadUrl) {
             return res.status(400).json({ error: "Missing required .zip mod file." });
@@ -183,24 +193,24 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
         }
 
         const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
-        const isOwner = mod.download_url && mod.download_url.includes(`/uploads/${username}/`);
+        const isOwner = mod.download_url && mod.download_url.includes(`/${username}/`);
 
         if (!isMod && !isOwner) {
             return res.status(403).json({ error: "Unauthorized to update this mod." });
         }
 
-        const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+        const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
         const ownerName = match ? match[1] : username;
 
-        const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
-        if (!fs.existsSync(userModsDir)) {
-            fs.mkdirSync(userModsDir, { recursive: true });
-        }
-
-        const zipFileName = `${modName}.zip`;
-        const targetPath = path.join(userModsDir, zipFileName);
-        fs.copyFileSync(file.path, targetPath);
+        const fileBuffer = fs.readFileSync(file.path);
+        const filePath = `${ownerName}/${modName}.zip`;
+        const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
+            contentType: 'application/zip',
+            upsert: true
+        });
         fs.unlinkSync(file.path);
+
+        if (error) throw error;
 
         mod.updated_at = new Date().getTime();
         await mod.save();
@@ -222,23 +232,19 @@ app.post('/api/delete-mod', async (req, res) => {
         const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
         const mod = await Mod.findOne({ name: modName });
         
-        if (!mod || (!isMod && !mod.download_url.includes(`/uploads/${username}/`))) {
+        if (!mod || (!isMod && !mod.download_url.includes(`/${username}/`))) {
             return res.status(404).json({ error: "Mod not found or unauthorized." });
         }
 
-        const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+        const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
         const ownerName = match ? match[1] : username;
 
-        const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
-        if (fs.existsSync(userModsDir)) {
-            const files = fs.readdirSync(userModsDir);
-            files.forEach(file => {
-                if (file.startsWith(modName)) {
-                    const filePath = path.join(userModsDir, file);
-                    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-                }
-            });
-        }
+        await supabase.storage.from(BUCKET_NAME).remove([
+            `${ownerName}/${modName}.zip`,
+            `${ownerName}/${modName}_icon.png`,
+            `${ownerName}/${modName}_icon.jpg`,
+            `${ownerName}/${modName}_icon.jpeg`
+        ]);
 
         await Mod.deleteOne({ name: modName });
         return res.json({ success: true, message: "Mod deleted successfully." });
