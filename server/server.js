@@ -297,8 +297,6 @@ app.post('/api/auth/google', async (req, res) => {
         
         let user = await User.findOne({ $or: [{ email }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
         
-        let user = await User.findOne({ email });
-        
         if (!user) {
             return res.json({ 
                 needsUsernameSetup: true, 
