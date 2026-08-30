@@ -5,86 +5,105 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const fetch = require('node-fetch');
+const mongoose = require('mongoose');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const USERS_FILE = path.join(__dirname, 'users.json');
-const MODS_FILE = path.join(__dirname, 'mods.json');
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Connected to MongoDB successfully'))
+    .catch(err => console.error('MongoDB connection error:', err));
+
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true },
+    password: { type: String, default: "" },
+    email: { type: String, default: "" }
+});
+const User = mongoose.model('User', userSchema);
+
+const modSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    description: { type: String, default: "" },
+    download_url: { type: String, required: true },
+    icon: { type: String, default: "images/default-icon.png" },
+    updated_at: { type: Number, required: true }
+});
+const Mod = mongoose.model('Mod', modSchema);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-function getUsers() {
-    if (!fs.existsSync(USERS_FILE)) return [];
-    try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch (e) { return []; }
-}
-function saveUsers(users) {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-}
-
-function getModsData() {
-    if (!fs.existsSync(MODS_FILE)) return { mods: [] };
-    try { return JSON.parse(fs.readFileSync(MODS_FILE, 'utf8')); } catch (e) { return { mods: [] }; }
-}
-function saveModsData(data) {
-    fs.writeFileSync(MODS_FILE, JSON.stringify(data, null, 2));
-}
-
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
 
-app.get('/api/check-username', (req, res) => {
+app.get('/api/check-username', async (req, res) => {
     const { username } = req.query;
     if (!username) return res.status(400).json({ error: "Username required." });
-    const users = getUsers();
-    const exists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
-    return res.json({ exists });
+    try {
+        const user = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+        return res.json({ exists: !!user });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: "Username and password required." });
-    let users = getUsers();
-    if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
-        return res.status(400).json({ error: "Username already taken." });
+    try {
+        const existingUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
+        if (existingUser) {
+            return res.status(400).json({ error: "Username already taken." });
+        }
+        await User.create({ username, password });
+        return res.status(200).json({ success: true, message: "Registered successfully." });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
-    users.push({ username, password });
-    saveUsers(users);
-    return res.status(200).json({ success: true, message: "Registered successfully." });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    let users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
-    if (!user) return res.status(400).json({ error: "Invalid username or password." });
-    return res.status(200).json({ success: true, message: "Login successful." });
+    try {
+        const user = await User.findOne({ username, password });
+        if (!user) return res.status(400).json({ error: "Invalid username or password." });
+        return res.status(200).json({ success: true, message: "Login successful." });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
 });
 
-app.post('/api/update-account', (req, res) => {
+app.post('/api/update-account', async (req, res) => {
     const { oldUsername, newUsername, newPassword } = req.body;
     if (!oldUsername || !newUsername) {
         return res.status(400).json({ error: "Old and new usernames are required." });
     }
-    let users = getUsers();
-    const userIndex = users.findIndex(u => u.username === oldUsername);
-    if (userIndex === -1) {
-        return res.status(404).json({ error: "User not found." });
+    try {
+        const user = await User.findOne({ username: oldUsername });
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        if (newUsername !== oldUsername) {
+            const taken = await User.findOne({ username: { $regex: new RegExp(`^${newUsername}$`, 'i') } });
+            if (taken) return res.status(400).json({ error: "Username already taken." });
+        }
+        user.username = newUsername;
+        if (newPassword && newPassword.trim() !== "") {
+            user.password = newPassword;
+        }
+        await user.save();
+        return res.json({ success: true, message: "Account updated successfully." });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
-    if (newUsername !== oldUsername && users.find(u => u.username.toLowerCase() === newUsername.toLowerCase())) {
-        return res.status(400).json({ error: "Username already taken." });
-    }
-    users[userIndex].username = newUsername;
-    if (newPassword && newPassword.trim() !== "") {
-        users[userIndex].password = newPassword;
-    }
-    saveUsers(users);
-    return res.json({ success: true, message: "Account updated successfully." });
 });
 
-app.get('/api/mods', (req, res) => {
-    const modsData = getModsData();
-    res.json(modsData);
+app.get('/api/mods', async (req, res) => {
+    try {
+        const mods = await Mod.find({});
+        res.json({ mods });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/upload', upload.any(), async (req, res) => {
@@ -124,27 +143,19 @@ app.post('/api/upload', upload.any(), async (req, res) => {
             return res.status(400).json({ error: "Missing required .zip mod file." });
         }
 
-        let modsData = getModsData();
-        if (!modsData.mods) modsData.mods = [];
-
-        const existingIndex = modsData.mods.findIndex(m => m.name === modName);
         const now = new Date().getTime();
+        await Mod.findOneAndUpdate(
+            { name: modName },
+            {
+                name: modName,
+                description: modDesc || "",
+                download_url: downloadUrl,
+                icon: iconUrl,
+                updated_at: now
+            },
+            { upsert: true, new: true }
+        );
 
-        const newModObj = {
-            name: modName,
-            description: modDesc || "",
-            download_url: downloadUrl,
-            icon: iconUrl,
-            updated_at: now
-        };
-
-        if (existingIndex !== -1) {
-            modsData.mods[existingIndex] = newModObj;
-        } else {
-            modsData.mods.push(newModObj);
-        }
-
-        saveModsData(modsData);
         res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
 
     } catch (err) {
@@ -161,26 +172,22 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
         return res.status(400).json({ error: "Missing required fields or file." });
     }
 
-    let modsData = getModsData();
-    if (!modsData.mods) modsData.mods = [];
-
-    const modIndex = modsData.mods.findIndex(m => m.name === modName);
-    if (modIndex === -1) {
-        return res.status(404).json({ error: "Mod not found." });
-    }
-
-    const mod = modsData.mods[modIndex];
-    const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
-    const isOwner = mod.download_url && mod.download_url.includes(`/uploads/${username}/`);
-
-    if (!isMod && !isOwner) {
-        return res.status(403).json({ error: "Unauthorized to update this mod." });
-    }
-
-    const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
-    const ownerName = match ? match[1] : username;
-
     try {
+        const mod = await Mod.findOne({ name: modName });
+        if (!mod) {
+            return res.status(404).json({ error: "Mod not found." });
+        }
+
+        const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
+        const isOwner = mod.download_url && mod.download_url.includes(`/uploads/${username}/`);
+
+        if (!isMod && !isOwner) {
+            return res.status(403).json({ error: "Unauthorized to update this mod." });
+        }
+
+        const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+        const ownerName = match ? match[1] : username;
+
         const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
         if (!fs.existsSync(userModsDir)) {
             fs.mkdirSync(userModsDir, { recursive: true });
@@ -191,8 +198,8 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
         fs.copyFileSync(file.path, targetPath);
         fs.unlinkSync(file.path);
 
-        modsData.mods[modIndex].updated_at = new Date().getTime();
-        saveModsData(modsData);
+        mod.updated_at = new Date().getTime();
+        await mod.save();
 
         return res.json({ success: true, message: "Mod file updated successfully." });
     } catch (err) {
@@ -201,27 +208,23 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
     }
 });
 
-app.post('/api/delete-mod', (req, res) => {
+app.post('/api/delete-mod', async (req, res) => {
     const { username, modName } = req.body;
     if (!username || !modName) {
         return res.status(400).json({ error: "Username and mod name are required." });
     }
 
-    let modsData = getModsData();
-    if (!modsData.mods) modsData.mods = [];
-
-    const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
-    const modIndex = modsData.mods.findIndex(m => m.name === modName && (isMod || m.download_url.includes(`/uploads/${username}/`)));
-    
-    if (modIndex === -1) {
-        return res.status(404).json({ error: "Mod not found or unauthorized." });
-    }
-
-    const mod = modsData.mods[modIndex];
-    const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
-    const ownerName = match ? match[1] : username;
-
     try {
+        const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
+        const mod = await Mod.findOne({ name: modName });
+        
+        if (!mod || (!isMod && !mod.download_url.includes(`/uploads/${username}/`))) {
+            return res.status(404).json({ error: "Mod not found or unauthorized." });
+        }
+
+        const match = mod.download_url.match(/\/uploads\/([^/]+)\/mods\//);
+        const ownerName = match ? match[1] : username;
+
         const userModsDir = path.join(__dirname, 'uploads', ownerName, 'mods');
         if (fs.existsSync(userModsDir)) {
             const files = fs.readdirSync(userModsDir);
@@ -232,14 +235,13 @@ app.post('/api/delete-mod', (req, res) => {
                 }
             });
         }
+
+        await Mod.deleteOne({ name: modName });
+        return res.json({ success: true, message: "Mod deleted successfully." });
     } catch (err) {
-        console.error("Error deleting files from disk:", err);
+        console.error("Error deleting mod:", err);
+        return res.status(500).json({ error: err.message });
     }
-
-    modsData.mods.splice(modIndex, 1);
-    saveModsData(modsData);
-
-    return res.json({ success: true, message: "Mod deleted successfully." });
 });
 
 app.post('/api/auth/google', async (req, res) => {
@@ -256,19 +258,16 @@ app.post('/api/auth/google', async (req, res) => {
 
         const email = googleUser.email;
         const baseUsername = googleUser.name || email.split('@')[0];
-        let users = getUsers();
         
-        let user = users.find(u => u.email === email || u.username.toLowerCase() === baseUsername.toLowerCase());
+        let user = await User.findOne({ $or: [{ email }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
         
         if (!user) {
             let username = baseUsername;
             let counter = 1;
-            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
                 username = `${baseUsername}${counter++}`;
             }
-            user = { username, email, password: "" };
-            users.push(user);
-            saveUsers(users);
+            user = await User.create({ username, email, password: "" });
         }
 
         return res.json({ success: true, username: user.username });
@@ -316,19 +315,16 @@ app.post('/api/auth/discord', async (req, res) => {
 
         const email = discordUser.email;
         const baseUsername = discordUser.username;
-        let users = getUsers();
 
-        let user = users.find(u => u.email === email || u.username.toLowerCase() === baseUsername.toLowerCase());
+        let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
 
         if (!user) {
             let username = baseUsername;
             let counter = 1;
-            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
                 username = `${baseUsername}${counter++}`;
             }
-            user = { username, email: email || "", password: "" };
-            users.push(user);
-            saveUsers(users);
+            user = await User.create({ username, email: email || "", password: "" });
         }
 
         return res.json({ success: true, username: user.username });
@@ -348,16 +344,8 @@ app.post('/api/auth/github', async (req, res) => {
     try {
         const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                client_id: CLIENT_ID,
-                client_secret: CLIENT_SECRET,
-                code: code,
-                redirect_uri: redirectUri
-            })
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code: code, redirect_uri: redirectUri })
         });
         const tokenData = await tokenRes.json();
 
@@ -366,10 +354,7 @@ app.post('/api/auth/github', async (req, res) => {
         }
         
         const userRes = await fetch('https://api.github.com/user', {
-            headers: {
-                'Authorization': `Bearer ${tokenData.access_token}`,
-                'User-Agent': 'Ali-A-App'
-            },
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'Ali-A-App' },
         });
         const githubUser = await userRes.json();
 
@@ -380,10 +365,7 @@ app.post('/api/auth/github', async (req, res) => {
         let email = githubUser.email;
         if (!email) {
             const emailRes = await fetch('https://api.github.com/user/emails', {
-                headers: {
-                    'Authorization': `Bearer ${tokenData.access_token}`,
-                    'User-Agent': 'Ali-A-App'
-                },
+                headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'Ali-A-App' },
             });
             if (emailRes.ok) {
                 const emails = await emailRes.json();
@@ -393,19 +375,15 @@ app.post('/api/auth/github', async (req, res) => {
         }
 
         const baseUsername = githubUser.login || githubUser.name || "GitHubUser";
-        let users = getUsers();
-
-        let user = users.find(u => (email && u.email === email) || u.username.toLowerCase() === baseUsername.toLowerCase());
+        let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
 
         if (!user) {
             let username = baseUsername;
             let counter = 1;
-            while (users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+            while (await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } })) {
                 username = `${baseUsername}${counter++}`;
             }
-            user = { username, email: email || "", password: "" };
-            users.push(user);
-            saveUsers(users);
+            user = await User.create({ username, email: email || "", password: "" });
         }
 
         return res.json({ success: true, username: user.username });
