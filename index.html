@@ -32,6 +32,7 @@
             height: 100vh;
             box-sizing: border-box;
             z-index: 100;
+            transition: transform 0.3s ease;
         }
 
         .sidebar h2 {
@@ -75,6 +76,26 @@
             padding: 30px;
             text-align: center;
             box-sizing: border-box;
+            transition: margin 0.3s ease;
+        }
+
+        .menu-toggle-btn {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 200;
+            background: #030712;
+            border: 1px solid #00d2ff;
+            color: #00d2ff;
+            border-radius: 6px;
+            width: 42px;
+            height: 42px;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
         }
 
         h1 {
@@ -318,9 +339,28 @@
             border-radius: 4px;
             box-shadow: 0 0 8px rgba(255, 0, 85, 0.8);
         }
+
+        /* Mobile Responsive Media Query */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px 15px;
+            }
+            .menu-toggle-btn {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">☰</button>
 
     <div class="app-container">
         <div class="sidebar">
@@ -341,7 +381,7 @@
             <div id="home-tab" class="tab-content">
                 <div class="panel">
                     <h3>Hello <span id="current-user" style="color: #00d2ff; font-weight: bold;"></span>!</h3>
-                    <p style="font-size: 16px; color: #00d2ff; line-height: 1.5;">Welcome to the AliA-Online</p> <!-- [cite: 1] -->
+                    <p style="font-size: 16px; color: #00d2ff; line-height: 1.5;">Welcome to the AliA-Online</p>[cite: 1]
                     <button onclick="switchTab('mods-tab')">Browse Mods Now</button>
                 </div>
             </div>
@@ -457,11 +497,20 @@
             checkOAuthCallbacks();
         };
 
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
 
             document.getElementById(tabId).classList.remove('hidden');
+
+            if (window.innerWidth <= 768) {
+                document.querySelector('.sidebar').classList.remove('mobile-open');
+            }
 
             if (tabId === 'home-tab') {
                 document.getElementById('menu-home').classList.add('active');
@@ -855,7 +904,7 @@
                 return;
             }
             const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
-            const favMods = allMods.filter(mod => favorites.notes(mod.name));
+            const favMods = allMods.filter(mod => favorites.includes(mod.name));
             displayMods(favMods, 'favorites-container');
             if (favMods.length === 0) {
                 container.innerHTML = "You haven't favorited any mods yet.";
@@ -930,7 +979,7 @@
 
             try {
                 alert("Uploading updated mod file...");
-                const response = await fetch('https://alia-server.onrender.com/api/update-mod', {
+                const response = await fetch('https://alia-server.onrender.com/api/update-mod-file', {
                     method: 'POST',
                     body: formData
                 });
