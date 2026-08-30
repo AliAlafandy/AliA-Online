@@ -574,6 +574,36 @@
             }
         }
 
+        async function handleOAuthSuccess(data) {
+            if (data.needsUsernameSetup) {
+                let chosenUsername = prompt("This is your first time logging in via social login. Choose your custom username:", data.suggestedUsername);
+                if (!chosenUsername || chosenUsername.trim() === "") {
+                    chosenUsername = data.suggestedUsername;
+                }
+
+                const setRes = await fetch('https://alia-server.onrender.com/api/auth/set-username', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: data.email, username: chosenUsername.trim() })
+                });
+                const setData = await setRes.json();
+                
+                if (setRes.ok) {
+                    localStorage.setItem('alia_logged_in_user', setData.username);
+                    alert(`Welcome, ${setData.username}!`);
+                    checkAuth();
+                    switchTab('home-tab');
+                } else {
+                    alert(setData.error || "Failed to set custom username.");
+                }
+            } else {
+                localStorage.setItem('alia_logged_in_user', data.username);
+                alert(`Welcome back, ${data.username}!`);
+                checkAuth();
+                switchTab('home-tab');
+            }
+        }
+
         async function handleGoogleSignIn(response) {
             try {
                 const res = await fetch('https://alia-server.onrender.com/api/auth/google', {
@@ -583,10 +613,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    localStorage.setItem('alia_logged_in_user', data.username);
-                    alert(`Welcome, ${data.username}!`);
-                    checkAuth();
-                    switchTab('home-tab');
+                    handleOAuthSuccess(data);
                 } else {
                     alert(data.error || "Google authentication failed.");
                 }
@@ -635,10 +662,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    localStorage.setItem('alia_logged_in_user', data.username);
-                    alert(`Welcome, ${data.username}!`);
-                    checkAuth();
-                    switchTab('home-tab');
+                    handleOAuthSuccess(data);
                 } else {
                     alert(data.error || `${providerName} authentication failed.`);
                 }
@@ -646,7 +670,7 @@
                 alert(`Network error during ${providerName} sign in.`);
             }
         }
-
+        
         async function handleRegister() {
             let user = document.getElementById('reg-username').value.trim();
             const pass = document.getElementById('reg-password').value.trim();
