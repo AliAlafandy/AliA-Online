@@ -562,6 +562,35 @@
             }
         }
 
+		function confirmDeleteMod(modName) {
+            if (confirm(`Are you sure you want to delete the mod "${modName}"?`)) {
+                deleteMod(modName);
+            }
+        }
+
+        async function deleteMod(modName) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            try {
+                const response = await fetch('https://alia-server.onrender.com/api/delete-mod', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedUser, modName: modName })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    alert("Mod deleted successfully!");
+                    loadMods();
+                    if (!document.getElementById('my-mods-tab').classList.contains('hidden')) {
+                        loadMyMods();
+                    }
+                } else {
+                    alert(data.error || "Failed to delete mod.");
+                }
+            } catch (err) {
+                alert("Network error while trying to delete mod.");
+            }
+        }
+
         function switchView(view) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.add('hidden');
