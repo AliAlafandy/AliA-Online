@@ -63,10 +63,14 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ error: "Username and password required." });
     try {
-        const user = await User.findOne({ username, password });
+        const user = await User.findOne({ 
+            username: { $regex: new RegExp(`^${username}$`, 'i') }, 
+            password 
+        });
         if (!user) return res.status(400).json({ error: "Invalid username or password." });
-        return res.status(200).json({ success: true, message: "Login successful." });
+        return res.status(200).json({ success: true, message: "Login successful.", username: user.username });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
