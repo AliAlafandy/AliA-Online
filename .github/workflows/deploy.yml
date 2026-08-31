@@ -94,13 +94,13 @@ jobs:
         id: apk
         run: |
           mkdir -p output
-          cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Alia Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Alia Online.apk"
-          echo "path=output/Alia Online.apk" >> $GITHUB_OUTPUT
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Ali-A_Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Ali-A_Online.apk"
+          echo "path=output/Ali-A_Online.apk" >> $GITHUB_OUTPUT
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: output/Alia Online.apk
+          path: output/Ali-A_Online.apk
 
   build-ios:
     runs-on: macos-latest
@@ -131,7 +131,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST_PATH"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST_PATH"
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alia.online'" "$PLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alialafandy.aliaonline'" "$PLIST_PATH"
           npx capacitor-assets generate --assetPath images
           cd ios/App
           xcodebuild -workspace "App.xcworkspace" \
@@ -153,19 +153,19 @@ jobs:
           
           mkdir -p Payload
           cp -r "$APP_PATH" Payload/
-          zip -r "Alia Online.ipa" Payload
+          zip -r "Ali-A_Online.ipa" Payload
           rm -rf Payload
       - name: Prepare IPA Output
         id: ipa
         run: |
           mkdir -p output
-          mv ios/App/"Alia Online.ipa" output/
-          echo "path=output/Alia Online.ipa" >> $GITHUB_OUTPUT
+          mv ios/App/"Ali-A_Online.ipa" output/
+          echo "path=output/Ali-A_Online.ipa" >> $GITHUB_OUTPUT
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-ipa
-          path: output/Alia Online.ipa
+          path: output/Ali-A_Online.ipa
 
   github-release:
     runs-on: ubuntu-latest
@@ -185,10 +185,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            artifacts/Alia Online.apk
-            artifacts/Alia Online.ipa
+            artifacts/Ali-A_Online.apk
+            artifacts/Ali-A_Online.ipa
           tag_name: v1.0.${{ github.run_number }}
-          name: "Alia Online v1.0.${{ github.run_number }}"
-          body: "Mobile Web app Android/iOS."
+          name: "Ali-A Online v1.0.${{ github.run_number }}"
+          body: "Mobile Web app Android / iOS."
           draft: false
           prerelease: true
