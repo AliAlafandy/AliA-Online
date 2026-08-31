@@ -68,7 +68,6 @@ jobs:
           npx cap sync android
           cd android
           ./gradlew bundleRelease
-
   build-ios:
     runs-on: macos-latest
     needs: deploy-web
@@ -79,19 +78,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Prepare Web Assets
-        run: |
-          mkdir -p public
-          cp index.html public/
       - name: Build iOS App Archive
         run: |
           npm install
           npm run build
-          npx cap add ios
+          npx cap add ios || true
           npx cap sync ios
           cd ios/App
-          xcodebuild -workspace "Alia Online.xcworkspace" \
-                     -scheme "Alia Online" \
+          xcodebuild -workspace "App.xcworkspace" \
+                     -scheme "App" \
                      -configuration Release \
                      -destination "generic/platform=iOS" \
                      CODE_SIGN_IDENTITY="" \
