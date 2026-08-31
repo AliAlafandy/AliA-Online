@@ -67,7 +67,7 @@ jobs:
           npm run build
           npx cap add android
           npx cap sync android
-          npx capacitor-assets generate --iconPath images/alafandySetting.png
+          npx capacitor-assets generate --assetPath images
           cd android
           ./gradlew bundleRelease
   build-ios:
@@ -91,7 +91,7 @@ jobs:
           npm run build
           npx cap add ios || true
           npx cap sync ios
-          npx capacitor-assets generate --iconPath images/alafandySetting.png
+          npx capacitor-assets generate --assetPath images
           cd ios/App
           xcodebuild -workspace "App.xcworkspace" \
                      -scheme "App" \
