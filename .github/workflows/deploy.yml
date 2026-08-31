@@ -56,6 +56,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p public
+          cp index.html public/
       - name: Build Android App Bundle
         run: |
           npm install
@@ -75,6 +79,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Prepare Web Assets
+        run: |
+          mkdir -p public
+          cp index.html public/
       - name: Build iOS App Archive
         run: |
           npm install
