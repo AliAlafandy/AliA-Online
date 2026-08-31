@@ -60,7 +60,7 @@ jobs:
         run: |
           npm install
           npm run build
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
           cd android
           ./gradlew bundleRelease
@@ -79,7 +79,7 @@ jobs:
         run: |
           npm install
           npm run build
-          npx cap add ios || true
+          npx cap add ios
           npx cap sync ios
           cd ios/App
           xcodebuild -workspace "Alia Online.xcworkspace" \
