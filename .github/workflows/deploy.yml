@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -44,6 +44,8 @@ jobs:
   build-android:
     runs-on: ubuntu-latest
     needs: deploy-web
+    outputs:
+      apk_path: ${{ steps.apk.outputs.path }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -60,19 +62,33 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/
-      - name: Build Android App Bundle
+      - name: Build Android APK
         run: |
           npm install
           npm install @capacitor/assets --save-dev
           npm run build
-          npx cap add android
+          npx cap add android || true
           npx cap sync android
           npx capacitor-assets generate --assetPath images
           cd android
-          ./gradlew bundleRelease
+          ./gradlew assembleRelease
+      - name: Rename and Prepare APK
+        id: apk
+        run: |
+          mkdir -p output
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Alia Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Alia Online.apk"
+          echo "path=output/Alia Online.apk" >> $GITHUB_OUTPUT
+      - name: Upload Android Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: output/Alia Online.apk
+
   build-ios:
     runs-on: macos-latest
     needs: deploy-web
+    outputs:
+      ipa_path: ${{ steps.ipa.outputs.path }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -84,7 +100,7 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/
-      - name: Build iOS App Archive
+      - name: Build iOS App & Package IPA
         run: |
           npm install
           npm install @capacitor/assets --save-dev
@@ -96,8 +112,53 @@ jobs:
           xcodebuild -workspace "App.xcworkspace" \
                      -scheme "App" \
                      -configuration Release \
-                     -destination "generic/platform=iOS" \
+                     -destination "generic/platform=iOS Simulator" \
                      CODE_SIGN_IDENTITY="" \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGN_ENTITLEMENTS="" \
                      build
+          
+          DERIVED_DATA_PATH=$(xcodebuild -workspace "App.xcworkspace" -scheme "App" -showBuildSettings | grep -m 1 "BUILT_PRODUCTS_DIR" | grep -oE "/.*")
+          APP_PATH="$DERIVED_DATA_PATH/App.app"
+          
+          mkdir -p Payload
+          cp -r "$APP_PATH" Payload/
+          zip -r "Alia Online.ipa" Payload
+          rm -rf Payload
+      - name: Prepare IPA Output
+        id: ipa
+        run: |
+          mkdir -p output
+          mv ios/App/"Alia Online.ipa" output/
+          echo "path=output/Alia Online.ipa" >> $GITHUB_OUTPUT
+      - name: Upload iOS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: output/Alia Online.ipa
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    steps:
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+          path: artifacts
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+          path: artifacts
+      - name: Create GitHub Release & Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Alia Online.apk
+            artifacts/Alia Online.ipa
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Alia Online v1.0.${{ github.run_number }}"
+          body: "Mobile Web app Android/iOS."
+          draft: false
+          prerelease: true
