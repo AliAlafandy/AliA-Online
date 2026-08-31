@@ -69,6 +69,24 @@ jobs:
           npm run build
           npx cap add android || true
           npx cap sync android
+      - name: url things and build game
+        run: |
+          MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
+          python3 -c "
+          with open('$MANIFEST_PATH', 'r') as f:
+              content = f.read()
+          intent_filter = '''
+                  <intent-filter>
+                      <action android:name=\"android.intent.action.VIEW\" />
+                      <category android:name=\"android.intent.category.DEFAULT\" />
+                      <category android:name=\"android.intent.category.BROWSABLE\" />
+                      <data android:scheme=\"com.alia.online\" />
+                  </intent-filter>
+          '''
+          new_content = content.replace('</activity>', intent_filter + '\n            </activity>', 1)
+          with open('$MANIFEST_PATH', 'w') as f:
+              f.write(new_content)
+          "
           npx capacitor-assets generate --assetPath images
           cd android
           ./gradlew assembleRelease
@@ -107,6 +125,13 @@ jobs:
           npm run build
           npx cap add ios || true
           npx cap sync ios
+      - name: Same thing as android
+        run: |
+          PLIST_PATH="ios/App/App/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alia.online'" "$PLIST_PATH"
           npx capacitor-assets generate --assetPath images
           cd ios/App
           xcodebuild -workspace "App.xcworkspace" \
