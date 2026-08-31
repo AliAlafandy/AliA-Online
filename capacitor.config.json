@@ -1,7 +1,7 @@
 {
   "appId": "com.alia.online",
   "appName": "Alia Online",
-  "webDir": "public",
+  "webDir": ".",
   "server": {
     "androidScheme": "https"
   }
