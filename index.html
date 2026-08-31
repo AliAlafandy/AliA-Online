@@ -402,7 +402,7 @@
             <div id="upload-tab" class="tab-content hidden">
                 <div class="panel" id="upload-panel">
                     <h3>Upload Mod & Icon</h3>
-                    <p>Logged in as: <span id="current-user" style="color: #00d2ff; font-weight: bold;"></span> <button onclick="logout()" style="width:auto; padding:4px 10px; margin-left: 10px;">Logout</button></p>
+                    <p>Logged in as: <span id="current-user" style="color: #00d2ff; font-weight: bold;"></span></p>
                     <input type="text" id="mod-name" placeholder="Mod Name (e.g. superMod)"><br>
                     <input type="text" id="mod-desc" placeholder="Mod Description"><br>
                     <label style="font-size: 13px; color: #00d2ff;">Mod Icon Image:</label><br>
@@ -482,10 +482,12 @@
 
                 <div class="panel hidden" id="account-panel">
                     <h3>Account Management</h3>
+                    <p>Logged in as: <span id="account-current-user" style="color: #00d2ff; font-weight: bold;"></span></p>
                     <p>Manage your account credentials below.</p>
                     <input type="text" id="update-username" placeholder="New Username"><br>
                     <input type="password" id="update-password" placeholder="New Password"><br>
-                    <button onclick="handleUpdateAccount()">Save Changes</button>
+                    <button onclick="handleUpdateAccount()">Save Changes</button><br>
+                    <button onclick="logout()" style="background-color: #ff0055; margin-top: 15px;">Logout of Account</button>
                 </div>
             </div>
         </div>
@@ -550,6 +552,7 @@
                 uploadMenu.classList.remove('hidden');
                 document.getElementById('auth-panel').classList.add('hidden');
                 document.getElementById('current-user').innerText = loggedUser;
+                document.getElementById('account-current-user').innerText = loggedUser;
                 document.getElementById('account-panel').classList.remove('hidden');
                 loadUserModsForDropdown();
             } else {
