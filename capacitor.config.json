@@ -1,6 +1,6 @@
 {
-  "appId": "com.alia.online",
-  "appName": "Alia Online",
+  "appId": "com.alialafandy.aliaonline",
+  "appName": "Ali-A Online",
   "webDir": "public",
   "server": {
     "androidScheme": "https"
