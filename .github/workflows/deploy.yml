@@ -67,6 +67,7 @@ jobs:
       - name: Build Android APK
         run: |
           npm install
+          npm install @capacitor/push-notifications@^5.0.0 @capacitor/assets@^3.0.0 --save-dev
           npm install @capacitor/assets --save-dev
           npm run build
           npx cap add android || true
