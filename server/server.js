@@ -51,6 +51,8 @@ const modSchema = new mongoose.Schema({
     size: { type: String, default: "Unknown" },
     downloads: { type: Number, default: 0 },
     favorites: { type: Number, default: 0 },
+    favoritedBy: [{ type: String }], 
+    uploaderCountry: { type: String, default: "🌍" },
     updated_at: { type: Number, required: true }
 });
 const Mod = mongoose.model('Mod', modSchema);
@@ -81,9 +83,7 @@ app.post('/api/register', async (req, res) => {
     if (!username || !password || !email) return res.status(400).json({ error: "Username, password, and email required." });
     try {
         const existingUser = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-        if (existingUser) {
-            return res.status(400).json({ error: "Username already taken." });
-        }
+        if (existingUser) return res.status(400).json({ error: "Username already taken." });
         await User.create({ username, password, email, phone });
         return res.status(200).json({ success: true, message: "Registered successfully." });
     } catch (err) {
@@ -93,15 +93,10 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/auth/set-username', async (req, res) => {
     const { email, username } = req.body;
-    if (!email || !username) {
-        return res.status(400).json({ error: "Email and username are required." });
-    }
-
+    if (!email || !username) return res.status(400).json({ error: "Email and username are required." });
     try {
         const taken = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-        if (taken) {
-            return res.status(400).json({ error: "Username is already taken." });
-        }
+        if (taken) return res.status(400).json({ error: "Username is already taken." });
 
         let user = await User.findOne({ email });
         if (user) {
@@ -110,7 +105,6 @@ app.post('/api/auth/set-username', async (req, res) => {
         } else {
             user = await User.create({ username, email, password: "" });
         }
-
         return res.json({ success: true, username: user.username });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -138,9 +132,7 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/update-account', upload.single('profilePic'), async (req, res) => {
     const { oldUsername, newUsername, newEmail, newPhone, newPassword, country } = req.body;
-    if (!oldUsername || !newUsername) {
-        return res.status(400).json({ error: "Old and new usernames are required." });
-    }
+    if (!oldUsername || !newUsername) return res.status(400).json({ error: "Old and new usernames are required." });
     try {
         const user = await User.findOne({ username: oldUsername });
         if (!user) return res.status(404).json({ error: "User not found." });
@@ -153,17 +145,19 @@ app.post('/api/update-account', upload.single('profilePic'), async (req, res) =>
         user.username = newUsername;
         if (newEmail) user.email = newEmail;
         if (newPhone) user.phone = newPhone;
-        if (country) user.country = country;
-        if (newPassword && newPassword.trim() !== "") {
-            user.password = newPassword;
+        
+        if (country) {
+            user.country = country;
+            await Mod.updateMany({ uploader: newUsername }, { uploaderCountry: country });
         }
+        
+        if (newPassword && newPassword.trim() !== "") user.password = newPassword;
 
         if (req.file) {
             const fileBuffer = fs.readFileSync(req.file.path);
             const filePath = `${newUsername}/profile.png`;
             const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
-                contentType: req.file.mimetype,
-                upsert: true
+                contentType: req.file.mimetype, upsert: true
             });
             if (error) throw error;
             const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
@@ -181,25 +175,19 @@ app.post('/api/update-account', upload.single('profilePic'), async (req, res) =>
 app.post('/api/delete-account', async (req, res) => {
     const { username } = req.body;
     if (!username) return res.status(400).json({ error: "Username required." });
-
     try {
         const userMods = await Mod.find({ uploader: username });
         for (const mod of userMods) {
             const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
             const ownerName = match ? match[1] : username;
-            
             await supabase.storage.from(BUCKET_NAME).remove([
-                `${ownerName}/${mod.name}.zip`,
-                `${ownerName}/${mod.name}_icon.png`,
-                `${ownerName}/${mod.name}_icon.jpg`,
-                `${ownerName}/${mod.name}_icon.jpeg`
+                `${ownerName}/${mod.name}.zip`, `${ownerName}/${mod.name}_icon.png`,
+                `${ownerName}/${mod.name}_icon.jpg`, `${ownerName}/${mod.name}_icon.jpeg`
             ]);
         }
-
         await Mod.deleteMany({ uploader: username });
         await supabase.storage.from(BUCKET_NAME).remove([`${username}/profile.png`]);
         await User.deleteOne({ username: username });
-
         return res.json({ success: true, message: "Account and all associated data deleted successfully." });
     } catch (err) {
         console.error("Error deleting account:", err);
@@ -216,72 +204,94 @@ app.get('/api/mods', async (req, res) => {
     }
 });
 
+app.post('/api/increment-download', async (req, res) => {
+    const { modName } = req.body;
+    if (!modName) return res.status(400).json({ error: "Missing modName" });
+    try {
+        const mod = await Mod.findOne({ name: modName });
+        if (mod) {
+            mod.downloads = (mod.downloads || 0) + 1;
+            await mod.save();
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/toggle-favorite', async (req, res) => {
+    const { username, modName } = req.body;
+    if (!username || !modName) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const mod = await Mod.findOne({ name: modName });
+        if (!mod) return res.status(404).json({ error: "Mod not found" });
+        
+        if (!mod.favoritedBy) mod.favoritedBy = [];
+        
+        const index = mod.favoritedBy.indexOf(username);
+        if (index > -1) {
+            mod.favoritedBy.splice(index, 1);
+            mod.favorites = Math.max(0, (mod.favorites || 0) - 1);
+            await mod.save();
+            return res.json({ success: true, favorited: false, favorites: mod.favorites });
+        } else {
+            mod.favoritedBy.push(username);
+            mod.favorites = (mod.favorites || 0) + 1;
+            await mod.save();
+            return res.json({ success: true, favorited: true, favorites: mod.favorites });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/upload', upload.any(), async (req, res) => {
     const { username, modName, modDesc, modTag, modColor } = req.body;
     const files = req.files;
-
     if (!username || !modName || !files || files.length === 0) {
         return res.status(400).json({ error: "Missing required fields or files." });
     }
-
     try {
+        const user = await User.findOne({ username });
+        const userCountry = user ? user.country : "🌍";
+
         let downloadUrl = "";
         let iconUrl = "images/default-icon.png";
         let fileSize = "Unknown";
 
         for (const file of files) {
             const fileBuffer = fs.readFileSync(file.path);
-
             if (file.fieldname === 'modFile' || file.originalname.endsWith('.zip')) {
                 const filePath = `${username}/${modName}.zip`;
-                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
-                    contentType: 'application/zip',
-                    upsert: true
-                });
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, { contentType: 'application/zip', upsert: true });
                 if (error) throw error;
-
                 const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
                 downloadUrl = data.publicUrl;
                 fileSize = (file.size / (1024 * 1024)).toFixed(2) + " MB";
             } else if (file.fieldname === 'iconFile' || file.mimetype.startsWith('image/')) {
                 const iconExt = path.extname(file.originalname) || '.png';
                 const filePath = `${username}/${modName}_icon${iconExt}`;
-                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
-                    contentType: file.mimetype,
-                    upsert: true
-                });
+                const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, { contentType: file.mimetype, upsert: true });
                 if (error) throw error;
-
                 const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
                 iconUrl = data.publicUrl;
             }
-
             fs.unlinkSync(file.path);
         }
 
-        if (!downloadUrl) {
-            return res.status(400).json({ error: "Missing required .zip mod file." });
-        }
+        if (!downloadUrl) return res.status(400).json({ error: "Missing required .zip mod file." });
 
         const now = new Date().getTime();
         await Mod.findOneAndUpdate(
             { name: modName },
             {
-                name: modName,
-                description: modDesc || "",
-                download_url: downloadUrl,
-                icon: iconUrl,
-                uploader: username,
-                tag: modTag || "Other",
-                color: modColor || "#0088ff",
-                size: fileSize,
-                updated_at: now
+                name: modName, description: modDesc || "", download_url: downloadUrl, icon: iconUrl,
+                uploader: username, tag: modTag || "Other", color: modColor || "#0088ff", size: fileSize,
+                uploaderCountry: userCountry, favoritedBy: [], downloads: 0, favorites: 0, updated_at: now
             },
             { upsert: true, new: true }
         );
-
         res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
-
     } catch (err) {
         console.error("UPLOAD CRASH:", err);
         res.status(500).json({ error: err.message });
@@ -291,38 +301,22 @@ app.post('/api/upload', upload.any(), async (req, res) => {
 app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
     const { username, modName } = req.body;
     const file = req.file;
-
-    if (!username || !modName || !file) {
-        return res.status(400).json({ error: "Missing required fields or file." });
-    }
-
+    if (!username || !modName || !file) return res.status(400).json({ error: "Missing required fields or file." });
     try {
         const mod = await Mod.findOne({ name: modName });
         if (!mod) return res.status(404).json({ error: "Mod not found." });
-
         const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
         const isOwner = mod.uploader === username;
-
-        if (!isMod && !isOwner) {
-            return res.status(403).json({ error: "Unauthorized to update this mod." });
-        }
-
+        if (!isMod && !isOwner) return res.status(403).json({ error: "Unauthorized to update this mod." });
         const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
         const ownerName = match ? match[1] : mod.uploader;
-
         const fileBuffer = fs.readFileSync(file.path);
         const filePath = `${ownerName}/${modName}.zip`;
-        const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
-            contentType: 'application/zip',
-            upsert: true
-        });
+        const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, { contentType: 'application/zip', upsert: true });
         fs.unlinkSync(file.path);
-
         if (error) throw error;
-
         mod.updated_at = new Date().getTime();
         await mod.save();
-
         return res.json({ success: true, message: "Mod file updated successfully." });
     } catch (err) {
         console.error("UPDATE MOD FILE ERROR:", err);
@@ -332,28 +326,17 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
 
 app.post('/api/delete-mod', async (req, res) => {
     const { username, modName } = req.body;
-    if (!username || !modName) {
-        return res.status(400).json({ error: "Username and mod name are required." });
-    }
-
+    if (!username || !modName) return res.status(400).json({ error: "Username and mod name are required." });
     try {
         const isMod = (username === 'Ethantobot11' || username === 'Ali Alafandy');
         const mod = await Mod.findOne({ name: modName });
-        
-        if (!mod || (!isMod && mod.uploader !== username)) {
-            return res.status(404).json({ error: "Mod not found or unauthorized." });
-        }
-
+        if (!mod || (!isMod && mod.uploader !== username)) return res.status(404).json({ error: "Mod not found or unauthorized." });
         const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
         const ownerName = match ? match[1] : mod.uploader;
-
         await supabase.storage.from(BUCKET_NAME).remove([
-            `${ownerName}/${modName}.zip`,
-            `${ownerName}/${modName}_icon.png`,
-            `${ownerName}/${modName}_icon.jpg`,
-            `${ownerName}/${modName}_icon.jpeg`
+            `${ownerName}/${modName}.zip`, `${ownerName}/${modName}_icon.png`,
+            `${ownerName}/${modName}_icon.jpg`, `${ownerName}/${modName}_icon.jpeg`
         ]);
-
         await Mod.deleteOne({ name: modName });
         return res.json({ success: true, message: "Mod deleted successfully." });
     } catch (err) {
@@ -372,12 +355,9 @@ app.post('/api/auth/google', async (req, res) => {
         const email = googleUser.email;
         const baseUsername = googleUser.name || email.split('@')[0];
         let user = await User.findOne({ $or: [{ email }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
-        if (!user) {
-            return res.json({ needsUsernameSetup: true, email: email, suggestedUsername: baseUsername });
-        }
+        if (!user) return res.json({ needsUsernameSetup: true, email: email, suggestedUsername: baseUsername });
         return res.json({ success: true, username: user.username });
     } catch (err) {
-        console.error("Google Auth Error:", err);
         return res.status(500).json({ error: "Google authentication failed." });
     }
 });
@@ -398,12 +378,9 @@ app.post('/api/auth/discord', async (req, res) => {
         const email = discordUser.email;
         const baseUsername = discordUser.username;
         let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
-        if (!user) {
-            return res.json({ needsUsernameSetup: true, email: email || `${discordUser.id}@discord.placeholder`, suggestedUsername: baseUsername });
-        }
+        if (!user) return res.json({ needsUsernameSetup: true, email: email || `${discordUser.id}@discord.placeholder`, suggestedUsername: baseUsername });
         return res.json({ success: true, username: user.username });
     } catch (err) {
-        console.error("Discord Auth Error:", err);
         return res.status(500).json({ error: "Discord authentication failed." });
     }
 });
@@ -431,12 +408,9 @@ app.post('/api/auth/github', async (req, res) => {
         }
         const baseUsername = githubUser.login || githubUser.name || "GitHubUser";
         let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
-        if (!user) {
-            return res.json({ needsUsernameSetup: true, email: email || `${githubUser.id}@github.placeholder`, suggestedUsername: baseUsername });
-        }
+        if (!user) return res.json({ needsUsernameSetup: true, email: email || `${githubUser.id}@github.placeholder`, suggestedUsername: baseUsername });
         return res.json({ success: true, username: user.username });
     } catch (err) {
-        console.error("GitHub Auth Error:", err);
         return res.status(500).json({ error: "GitHub authentication failed." });
     }
 });

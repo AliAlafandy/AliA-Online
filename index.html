@@ -11,456 +11,64 @@
     <link rel="icon" type="image/png" sizes="48x48" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAGtElEQVR4AeyZBcg1RRSG57e7uztQDLC7sAvsLuxWLFSwuwsTEbHFblEsbFHEFkXFTuyO57nft+ve++3uzN67Ij/8cN57Zs7Ezpk4c87csUIIf4/OUAHGP/rSGAX+77VrYQVmR4fjwQlgHFBH01B4JDgItEMDKGDTlRnFm2BnsD34DUwKijQFmRXA9+AtsA9Q4e3gVTQeBdOCODmKeK3SGosjvQOsDWYGrsTW8MdBRpuReBmcCHYDC4EZwYbgODAZKNKSZK4Fd4P3wOqgnvpUYE56fQKsBR4Bktb4ehIPgI/Bo+AIsBFwpa6DfwKkh/hxuy0HnxgsAe4CVwBXbGO4k3MMvJ76UGBcircaJf/0JQmK0Kk8A8wJ7PjT2xJcCEvYj0z/KzE2hC3w7fQGv51S1f/q/m+Ea4S142x2Q7xUeJbE37H+1L0M0fH0fJ3sWd1L83b632pY8j8Yd7X/A2U1v13K+vQAAAABJRU5ErkJggg==">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #000000;
-            color: #ffffff;
-            margin: 0;
-            padding: 0;
-        }
-
-        .offline-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000000;
-            color: #ff0055;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            text-shadow: 0 0 15px rgba(255, 0, 85, 0.8);
-        }
-        .offline-screen.hidden {
-            display: none !important;
-        }
-        
-        .app-container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        .sidebar {
-            width: 260px;
-            background-color: #030712;
-            border-right: 1px solid #00d2ff;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-shadow: 5px 0 15px rgba(0, 210, 255, 0.1);
-            position: fixed;
-            height: 100vh;
-            box-sizing: border-box;
-            z-index: 100;
-            transition: transform 0.3s ease;
-        }
-
-        .sidebar h2 {
-            font-size: 20px;
-            color: #00d2ff;
-            text-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            flex-grow: 1;
-        }
-
-        .sidebar-menu li {
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            background: #000000;
-            border: 1px solid #0055ff;
-            border-radius: 6px;
-            cursor: pointer;
-            text-align: left;
-            font-weight: bold;
-            color: #0088ff;
-            transition: all 0.3s ease;
-        }
-
-        .sidebar-menu li:hover, .sidebar-menu li.active {
-            background-color: #0088ff;
-            color: #ffffff;
-            border-color: #00d2ff;
-            box-shadow: 0 0 12px rgba(0, 210, 255, 0.6);
-        }
-
-        .main-content {
-            margin-left: 260px;
-            flex-grow: 1;
-            padding: 30px;
-            text-align: center;
-            box-sizing: border-box;
-            transition: margin 0.3s ease;
-        }
-
-        .menu-toggle-btn {
-            display: none;
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 200;
-            background: #030712;
-            border: 1px solid #00d2ff;
-            color: #00d2ff;
-            border-radius: 6px;
-            width: 42px;
-            height: 42px;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
-        }
-
-        .profile-corner {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 150;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .profile-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #00d2ff;
-            object-fit: cover;
-            background-color: #030712;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.4);
-        }
-        .profile-img-large {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 2px solid #00d2ff;
-            object-fit: cover;
-            margin-bottom: 10px;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
-        }
-
-        h1 {
-            color: #00d2ff;
-            text-shadow: 0 0 10px rgba(0, 210, 255, 0.8), 0 0 20px rgba(0, 100, 255, 0.5);
-            letter-spacing: 2px;
-            margin-top: 0;
-        }
-        
-        h3 {
-            color: #0088ff;
-            text-shadow: 0 0 8px rgba(0, 136, 255, 0.7);
-        }
-
-        .panel {
-            background: #030712;
-            padding: 25px;
-            margin: 20px auto;
-            max-width: 450px;
-            border-radius: 12px;
-            border: 1px solid #00d2ff;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 136, 255, 0.1);
-        }
-
-        input, button, select {
-            padding: 12px;
-            margin: 10px 0;
-            width: 85%;
-            border-radius: 6px;
-            border: 1px solid #0055ff;
-            background: #000000;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-        }
-
-        input:focus, select:focus {
-            border-color: #00d2ff;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.6);
-        }
-
-        button {
-            background-color: #0088ff;
-            color: #ffffff;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 10px rgba(0, 136, 255, 0.5);
-            transition: all 0.3s ease;
-            width: auto;
-            padding: 12px 20px;
-        }
-
-        button:hover {
-            background-color: #00d2ff;
-            color: #000000;
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.9);
-        }
-
-        .btn-discord {
-            background-color: #5865F2;
-            color: #ffffff;
-            width: 85%;
-            margin-top: 10px;
-        }
-        .btn-discord:hover {
-            background-color: #4752C4;
-            color: #ffffff;
-            box-shadow: 0 0 15px rgba(88, 101, 242, 0.8);
-        }
-
-        .btn-github {
-            background-color: #000000;
-            color: #ffffff;
-            border: 1px solid #00d2ff;
-            width: 85%;
-            margin-top: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 6px;
-            padding: 12px;
-        }
-        .btn-github:hover {
-            background-color: #111111;
-            color: #ffffff;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.8);
-        }
-
-        .oauth-divider {
-            margin: 15px 0;
-            font-size: 12px;
-            color: #00d2ff;
-            text-transform: uppercase;
-        }
-
-        .social-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
+        .offline-screen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #000000; color: #ff0055; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; font-size: 24px; font-weight: bold; text-shadow: 0 0 15px rgba(255, 0, 85, 0.8); }
+        .offline-screen.hidden { display: none !important; }
+        .app-container { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background-color: #030712; border-right: 1px solid #00d2ff; display: flex; flex-direction: column; padding: 20px; box-shadow: 5px 0 15px rgba(0, 210, 255, 0.1); position: fixed; height: 100vh; box-sizing: border-box; z-index: 100; transition: transform 0.3s ease; }
+        .sidebar h2 { font-size: 20px; color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.8); margin-bottom: 25px; text-align: center; }
+        .sidebar-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
+        .sidebar-menu li { padding: 12px 15px; margin-bottom: 10px; background: #000000; border: 1px solid #0055ff; border-radius: 6px; cursor: pointer; text-align: left; font-weight: bold; color: #0088ff; transition: all 0.3s ease; }
+        .sidebar-menu li:hover, .sidebar-menu li.active { background-color: #0088ff; color: #ffffff; border-color: #00d2ff; box-shadow: 0 0 12px rgba(0, 210, 255, 0.6); }
+        .main-content { margin-left: 260px; flex-grow: 1; padding: 30px; text-align: center; box-sizing: border-box; transition: margin 0.3s ease; }
+        .menu-toggle-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 200; background: #030712; border: 1px solid #00d2ff; color: #00d2ff; border-radius: 6px; width: 42px; height: 42px; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
+        .profile-corner { position: fixed; top: 15px; right: 15px; z-index: 150; display: flex; align-items: center; gap: 10px; }
+        .profile-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #00d2ff; object-fit: cover; background-color: #030712; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
+        .profile-img-large { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00d2ff; object-fit: cover; margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+        h1 { color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.8), 0 0 20px rgba(0, 100, 255, 0.5); letter-spacing: 2px; margin-top: 0; }
+        h3 { color: #0088ff; text-shadow: 0 0 8px rgba(0, 136, 255, 0.7); }
+        .panel { background: #030712; padding: 25px; margin: 20px auto; max-width: 450px; border-radius: 12px; border: 1px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 136, 255, 0.1); }
+        input, button, select { padding: 12px; margin: 10px 0; width: 85%; border-radius: 6px; border: 1px solid #0055ff; background: #000000; color: #fff; font-size: 14px; outline: none; transition: all 0.3s ease; box-sizing: border-box; }
+        input:focus, select:focus { border-color: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.6); }
+        button { background-color: #0088ff; color: #ffffff; font-weight: bold; cursor: pointer; border: none; box-shadow: 0 0 10px rgba(0, 136, 255, 0.5); transition: all 0.3s ease; width: auto; padding: 12px 20px; }
+        button:hover { background-color: #00d2ff; color: #000000; box-shadow: 0 0 20px rgba(0, 210, 255, 0.9); }
+        .btn-discord { background-color: #5865F2; color: #ffffff; width: 85%; margin-top: 10px; }
+        .btn-discord:hover { background-color: #4752C4; color: #ffffff; box-shadow: 0 0 15px rgba(88, 101, 242, 0.8); }
+        .btn-github { background-color: #000000; color: #ffffff; border: 1px solid #00d2ff; width: 85%; margin-top: 10px; font-weight: bold; cursor: pointer; border-radius: 6px; padding: 12px; }
+        .btn-github:hover { background-color: #111111; color: #ffffff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.8); }
+        .oauth-divider { margin: 15px 0; font-size: 12px; color: #00d2ff; text-transform: uppercase; }
+        .social-container { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 10px; }
         .hidden { display: none !important; }
-
-        .toggle-link {
-            color: #00d2ff;
-            cursor: pointer;
-            text-decoration: underline;
-            margin-top: 10px;
-            display: inline-block;
-            text-shadow: 0 0 5px rgba(0, 210, 255, 0.5);
-        }
+        .toggle-link { color: #00d2ff; cursor: pointer; text-decoration: underline; margin-top: 10px; display: inline-block; text-shadow: 0 0 5px rgba(0, 210, 255, 0.5); }
         .toggle-link:hover { color: #ffffff; }
-
-        .search-container {
-            margin: 20px auto;
-            max-width: 500px;
-        }
-        .search-container input {
-            width: 100%;
-            background: #030712;
-            border: 1px solid #00d2ff;
-            box-shadow: 0 0 8px rgba(0, 210, 255, 0.2);
-        }
-
-        .tag-filters {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .tag-btn {
-            background: #030712;
-            border: 1px solid #0055ff;
-            color: #0088ff;
-            padding: 8px 16px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: all 0.3s ease;
-        }
-        .tag-btn:hover, .tag-btn.active {
-            background: #0088ff;
-            color: #ffffff;
-            border-color: #00d2ff;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
-        }
-
-        #mods-container, #my-mods-container, #favorites-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .mod-card {
-            background-color: #030712;
-            border: 2px solid #0088ff;
-            border-radius: 10px;
-            padding: 20px;
-            width: 260px;
-            text-align: center;
-            box-shadow: 0 0 12px rgba(0, 136, 255, 0.3);
-            transition: transform 0.3s ease;
-            position: relative;
-        }
-        .mod-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 0 22px rgba(0, 210, 255, 0.5);
-        }
-
-        .mod-icon {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #0055ff;
-            margin-bottom: 10px;
-        }
-
-        .mod-stats {
-            display: flex;
-            justify-content: space-around;
-            font-size: 12px;
-            color: #00d2ff;
-            margin: 10px 0;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-
-        .download-btn {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 15px;
-            background-color: transparent;
-            color: #00d2ff;
-            border: 2px solid #00d2ff;
-            text-decoration: none;
-            font-weight: bold;
-            border-radius: 5px;
-            box-shadow: 0 0 8px rgba(0, 210, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-        .download-btn:hover {
-            background-color: #00d2ff;
-            color: #000000;
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.9);
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 0, 0, 0.2);
-            border: 1px solid #ff4444;
-            color: #ff4444;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            margin: 0;
-            box-shadow: 0 0 5px rgba(255, 68, 68, 0.4);
-            transition: all 0.3s ease;
-        }
-        .delete-btn:hover {
-            background: #ff4444;
-            color: #ffffff;
-            box-shadow: 0 0 12px rgba(255, 68, 68, 0.9);
-        }
-
-        .favorite-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 210, 255, 0.2);
-            border: 1px solid #00d2ff;
-            color: #00d2ff;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            margin: 0;
-            transition: all 0.3s ease;
-        }
-        .favorite-btn.favorited {
-            background: #00d2ff;
-            color: #000000;
-            box-shadow: 0 0 10px rgba(0, 210, 255, 0.8);
-        }
-
-        .update-tag {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            background-color: #ff0055;
-            color: #ffffff;
-            font-size: 10px;
-            font-weight: bold;
-            padding: 3px 6px;
-            border-radius: 4px;
-            box-shadow: 0 0 8px rgba(255, 0, 85, 0.8);
-        }
-
-        .footer-coming-soon {
-            margin-top: 50px;
-            padding: 20px;
-            color: #00d2ff;
-            font-size: 14px;
-            border-top: 1px solid #0055ff;
-            text-align: center;
-        }
-
+        .search-container { margin: 20px auto; max-width: 500px; }
+        .search-container input { width: 100%; background: #030712; border: 1px solid #00d2ff; box-shadow: 0 0 8px rgba(0, 210, 255, 0.2); }
+        .tag-filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .tag-btn { background: #030712; border: 1px solid #0055ff; color: #0088ff; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; transition: all 0.3s ease; }
+        .tag-btn:hover, .tag-btn.active { background: #0088ff; color: #ffffff; border-color: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.5); }
+        #mods-container, #my-mods-container, #favorites-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; margin-top: 30px; }
+        .mod-card { background-color: #030712; border: 2px solid #0088ff; border-radius: 10px; padding: 20px; width: 260px; text-align: center; box-shadow: 0 0 12px rgba(0, 136, 255, 0.3); transition: transform 0.3s ease; position: relative; }
+        .mod-card:hover { transform: translateY(-5px); box-shadow: 0 0 22px rgba(0, 210, 255, 0.5); }
+        .mod-icon { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #0055ff; margin-bottom: 10px; }
+        .mod-stats { display: flex; justify-content: space-around; font-size: 12px; color: #00d2ff; margin: 10px 0; flex-wrap: wrap; gap: 5px; }
+        .download-btn { display: inline-block; margin-top: 15px; padding: 10px 15px; background-color: transparent; color: #00d2ff; border: 2px solid #00d2ff; text-decoration: none; font-weight: bold; border-radius: 5px; box-shadow: 0 0 8px rgba(0, 210, 255, 0.3); transition: all 0.3s ease; cursor: pointer; }
+        .download-btn:hover { background-color: #00d2ff; color: #000000; box-shadow: 0 0 15px rgba(0, 210, 255, 0.9); }
+        .delete-btn { position: absolute; top: 10px; right: 10px; background: rgba(255, 0, 0, 0.2); border: 1px solid #ff4444; color: #ff4444; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; box-shadow: 0 0 5px rgba(255, 68, 68, 0.4); transition: all 0.3s ease; }
+        .delete-btn:hover { background: #ff4444; color: #ffffff; box-shadow: 0 0 12px rgba(255, 68, 68, 0.9); }
+        .favorite-btn { position: absolute; top: 10px; left: 10px; background: rgba(0, 210, 255, 0.2); border: 1px solid #00d2ff; color: #00d2ff; border-radius: 50%; width: 32px; height: 32px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; transition: all 0.3s ease; }
+        .favorite-btn.favorited { background: #00d2ff; color: #000000; box-shadow: 0 0 10px rgba(0, 210, 255, 0.8); }
+        .update-tag { position: absolute; top: 50px; left: 10px; background-color: #ff0055; color: #ffffff; font-size: 10px; font-weight: bold; padding: 3px 6px; border-radius: 4px; box-shadow: 0 0 8px rgba(255, 0, 85, 0.8); }
+        .footer-coming-soon { margin-top: 50px; padding: 20px; color: #00d2ff; font-size: 14px; border-top: 1px solid #0055ff; text-align: center; }
         @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .sidebar.mobile-open {
-                transform: translateX(0);
-            }
-            .main-content {
-                margin-left: 0;
-                padding: 20px 15px;
-            }
-            .menu-toggle-btn {
-                display: flex;
-            }
-            .profile-corner {
-                top: 15px;
-                right: 60px; /* Shift left to not overlap menu toggle */
-            }
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 20px 15px; }
+            .menu-toggle-btn { display: flex; }
+            .profile-corner { top: 15px; right: 60px; }
         }
     </style>
 </head>
 <body>
-
     <div id="offline-screen" class="offline-screen hidden">
         <h2>No Internet Connection</h2>
         <p style="color: #00d2ff; font-size: 16px; margin-top: 10px;">Please check your Wi-Fi or network connection to continue.</p>
@@ -469,7 +77,6 @@
 
     <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">☰</button>
 
-    <!-- Up-Right Profile Corner -->
     <div class="profile-corner">
         <span id="header-country-flag" style="font-size: 24px;"></span>
         <img id="header-profile-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADdklEQVR4AcSXWahOURSAj3koIkrmSEIoD5IHZUh5kJAxUWR+EBIhIUMpEkKKTAkPyhQeKJHhwUzGzCSSmcx8X+6fa//nnP/c219u6/vX3vusvfc6++y91r4Voyj69T/RAeb/f1JGBzSvWVRvHTHjgNuwWwndoR/kpA6FneDz7ehGkF0yOuAEWxh1FZyGLtANTsJhWAhLYDFshpwMpXCjhGrofMngQD16NYBTcA/ewGrpYCoOhK9yEWyU0Q7eGd9AR2sJdiJcCDjjxHHpOgS+Qk+cUzkEHCOU6DWOhNswFxZeoYCGPAg70p8NtuAahTKNhI4QyjoYHkE1SHGjBCE3B74yKlVm0LoPS8orKCsgmKQ64/C6dS5o02C4ejILyS4oDLv2GDCN7IvZnsIs3SXCgOtYH4RIUkkcYlI4LVKMa/mQiwQH7xu9anxSTFAeKOU3yWEVwYB+jGw1L456Ij3wY/yPldMBuhmfjw3gGHB0wifp6CI8oTYE4UtCUVq3Mw+FwBzwhPdFXwPjvcfTIXqT+DYyGj9ETIVlSHPCeEnbsTYPZUH2c8mVoAw/B+O9kQyibtH6izRGGZDMm1RhJcSDGOpoaRdFMMOG0R6+DEWCafoZ+Aa6Gx9coWYl6FTA66hDFQMrgwGy6roV2YCr+iG4CT8CgNQ/t8psjFlF2VTqhTVyWKcZIGRyYQfcD0By+wn1YA3sh97neUtbGNPyZsqn6PNoVi58qvpUuURQGIq9iTmT895tafhn9+euD+gQDQPHeYCb1QuIm9VPYnk+KA6Hx2ZIGE5QrcIa6ux0VeUlxQ76P/v75qS5QHQk6i4qRFAdyg+d69SgpmKZ/UPbt+qIVnXO5j1qBMeAx9YrmBjxE3T6oQBIccHKXemBgbtWbkMnGQFOLBnUIzZF74AQFN+oetGOiAklwQG/dPL0C81zVCX07s+BWGj3vE9BPwfow9A74AC3Bo4iKkQQHtHSwqxQaQyimYJfdO6GolwcDkJm2F4RHwjoCKvLR6IXUc6/mkOOD5fk2PQWC0izNtyDMxCLnkBqrOtHn+XQWdd7XKtQkZJ9rNj8s4H10XPGYOXBqdO8Yz37Y+ejIYlDyWCyinS9xrBT02UTcBfUd7STUQJVEVm+lgeDYlUywgGRzIjWCU8x8SU2wcyzE0GyYvNwZ5UgYH8vpmaihk9BsAAP//GsBXNQAAAAZJREFUAwAWxc0hZkmO2wAAAABJRU5ErkJggg==" alt="Profile" class="profile-img" onclick="switchTab('account-tab')" title="Account Settings">
@@ -562,19 +169,13 @@
                         <input type="text" id="login-identifier" placeholder="Username, Email, or Phone"><br>
                         <input type="password" id="login-password" placeholder="Password"><br>
                         <button onclick="handleLogin()">Login</button>
-
                         <div class="oauth-divider">Or continue with</div>
                         <div class="social-container">
-                            <div id="g_id_onload"
-                                 data-client_id="803940024031-52dvqhu4camptdqhv9474f1jvdlf6jf0.apps.googleusercontent.com"
-                                 data-callback="handleGoogleSignIn"
-                                 data-auto_prompt="false">
-                            </div>
+                            <div id="g_id_onload" data-client_id="803940024031-52dvqhu4camptdqhv9474f1jvdlf6jf0.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="false"></div>
                             <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signin_with" data-size="large"></div>
                             <button class="btn-discord" onclick="handleDiscordSignIn()">Login with Discord</button>
                             <button class="btn-github" onclick="handleGitHubSignIn()">Login with GitHub</button>
                         </div>
-
                         <p>Don't have an account? <span class="toggle-link" onclick="switchView('register')">Register here</span></p>
                         <p><span class="toggle-link" onclick="switchView('forgot')">Forgot Password?</span></p>
                     </div>
@@ -586,14 +187,12 @@
                         <input type="email" id="reg-email" placeholder="Recovery Email (required for 2FA & warnings)"><br>
                         <input type="tel" id="reg-phone" placeholder="Recovery Phone Number (optional)"><br>
                         <button onclick="handleRegister()">Register Account</button>
-                        
                         <div class="oauth-divider">Or register with</div>
                         <div class="social-container">
                             <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signup_with" data-size="large"></div>
                             <button class="btn-discord" onclick="handleDiscordSignIn()">Register with Discord</button>
                             <button class="btn-github" onclick="handleGitHubSignIn()">Register with GitHub</button>
                         </div>
-
                         <p>Already have an account? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
                     </div>
 
@@ -678,7 +277,6 @@
             updateOnlineStatus();
             checkAuth();
             checkOAuthCallbacks();
-            
             const lastTab = localStorage.getItem('last_active_tab');
             if (lastTab && document.getElementById(lastTab)) {
                 switchTab(lastTab);
@@ -700,16 +298,12 @@
         }
 
         function checkConnection() {
-            if (navigator.onLine) {
-                window.location.reload();
-            } else {
-                alert("Still offline. Please check your connection.");
-            }
+            if (navigator.onLine) { window.location.reload(); } 
+            else { alert("Still offline. Please check your connection."); }
         }
 
         function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('mobile-open');
+            document.querySelector('.sidebar').classList.toggle('mobile-open');
         }
 
         function switchTab(tabId) {
@@ -719,14 +313,9 @@
             }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
-
             document.getElementById(tabId).classList.remove('hidden');
-            
             localStorage.setItem('last_active_tab', tabId);
-
-            if (window.innerWidth <= 768) {
-                document.querySelector('.sidebar').classList.remove('mobile-open');
-            }
+            if (window.innerWidth <= 768) document.querySelector('.sidebar').classList.remove('mobile-open');
 
             if (tabId === 'home-tab') {
                 document.getElementById('menu-home').classList.add('active');
@@ -750,9 +339,7 @@
                 document.getElementById('menu-account').classList.add('active');
                 document.getElementById('page-title').innerText = "Account Settings";
                 const loggedUser = localStorage.getItem('alia_logged_in_user');
-                if(loggedUser) {
-                    document.getElementById('update-username').value = loggedUser;
-                }
+                if(loggedUser) document.getElementById('update-username').value = loggedUser;
             }
         }
 
@@ -785,16 +372,12 @@
                 document.getElementById('auth-panel').classList.remove('hidden');
                 document.getElementById('account-panel').classList.add('hidden');
                 document.getElementById('header-country-flag').innerText = '';
-                if (!document.getElementById('upload-tab').classList.contains('hidden')) {
-                    switchTab('home-tab');
-                }
+                if (!document.getElementById('upload-tab').classList.contains('hidden')) switchTab('home-tab');
             }
         }
 
         function confirmDeleteMod(modName) {
-            if (confirm(`Are you sure you want to delete the mod "${modName}"?`)) {
-                deleteMod(modName);
-            }
+            if (confirm(`Are you sure you want to delete the mod "${modName}"?`)) deleteMod(modName);
         }
 
         async function deleteMod(modName) {
@@ -802,40 +385,29 @@
             const loggedUser = localStorage.getItem('alia_logged_in_user');
             try {
                 const response = await fetch('https://alia-server.onrender.com/api/delete-mod', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: loggedUser, modName: modName })
                 });
                 const data = await response.json();
                 if (response.ok) {
                     alert("Mod deleted successfully!");
                     loadMods();
-                    if (!document.getElementById('my-mods-tab').classList.contains('hidden')) {
-                        loadMyMods();
-                    }
+                    if (!document.getElementById('my-mods-tab').classList.contains('hidden')) loadMyMods();
                 } else {
                     alert(data.error || "Failed to delete mod.");
                 }
-            } catch (err) {
-                alert("Network error while trying to delete mod.");
-            }
+            } catch (err) { alert("Network error while trying to delete mod."); }
         }
 
         async function deleteAccount() {
-            if (!confirm("⚠️ WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone and all your mods and data will be permanently removed!")) {
-                return;
-            }
+            if (!confirm("⚠️ WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone and all your mods and data will be permanently removed!")) return;
             const confirmation = prompt("FINAL WARNING: Type 'DELETE' to confirm account deletion:");
-            if (confirmation !== 'DELETE') {
-                alert("Account deletion cancelled.");
-                return;
-            }
+            if (confirmation !== 'DELETE') { alert("Account deletion cancelled."); return; }
 
             const oldUser = localStorage.getItem('alia_logged_in_user');
             try {
                 const response = await fetch('https://alia-server.onrender.com/api/delete-account', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: oldUser })
                 });
                 const data = await response.json();
@@ -845,55 +417,38 @@
                     localStorage.removeItem('alia_user_profile_' + oldUser);
                     checkAuth();
                     switchTab('home-tab');
-                } else {
-                    alert(data.error || "Failed to delete account.");
-                }
-            } catch (err) {
-                alert("Network error while trying to delete account.");
-            }
+                } else { alert(data.error || "Failed to delete account."); }
+            } catch (err) { alert("Network error while trying to delete account."); }
         }
 
         function switchView(view) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('forgot-form').classList.add('hidden');
-
-            if (view === 'register') {
-                document.getElementById('register-form').classList.remove('hidden');
-            } else if (view === 'forgot') {
-                document.getElementById('forgot-form').classList.remove('hidden');
-            } else {
-                document.getElementById('login-form').classList.remove('hidden');
-            }
+            if (view === 'register') document.getElementById('register-form').classList.remove('hidden');
+            else if (view === 'forgot') document.getElementById('forgot-form').classList.remove('hidden');
+            else document.getElementById('login-form').classList.remove('hidden');
         }
 
         async function handleOAuthSuccess(data) {
             if (data.needsUsernameSetup) {
                 let chosenUsername = prompt("This is your first time logging in via social login. Choose your custom username:", data.suggestedUsername);
-                if (!chosenUsername || chosenUsername.trim() === "") {
-                    chosenUsername = data.suggestedUsername;
-                }
+                if (!chosenUsername || chosenUsername.trim() === "") chosenUsername = data.suggestedUsername;
 
                 const setRes = await fetch('https://alia-server.onrender.com/api/auth/set-username', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: data.email, username: chosenUsername.trim() })
                 });
                 const setData = await setRes.json();
-                
                 if (setRes.ok) {
                     localStorage.setItem('alia_logged_in_user', setData.username);
                     alert(`Welcome, ${setData.username}!`);
-                    checkAuth();
-                    switchTab('home-tab');
-                } else {
-                    alert(setData.error || "Failed to set custom username.");
-                }
+                    checkAuth(); switchTab('home-tab');
+                } else { alert(setData.error || "Failed to set custom username."); }
             } else {
                 localStorage.setItem('alia_logged_in_user', data.username);
                 alert(`Welcome back, ${data.username}!`);
-                checkAuth();
-                switchTab('home-tab');
+                checkAuth(); switchTab('home-tab');
             }
         }
 
@@ -901,19 +456,13 @@
             if (!navigator.onLine) return;
             try {
                 const res = await fetch('https://alia-server.onrender.com/api/auth/google', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: response.credential })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    handleOAuthSuccess(data);
-                } else {
-                    alert(data.error || "Google authentication failed.");
-                }
-            } catch (err) {
-                alert("Network error during Google sign in.");
-            }
+                if (res.ok) handleOAuthSuccess(data);
+                else alert(data.error || "Google authentication failed.");
+            } catch (err) { alert("Network error during Google sign in."); }
         }
 
         function handleDiscordSignIn() {
@@ -938,33 +487,22 @@
             const code = urlParams.get('code');
             const provider = sessionStorage.getItem('oauth_provider');
             const iss = urlParams.get('iss');
-        
             if (!code) return;
-        
             window.history.replaceState({}, document.title, window.location.pathname);
             sessionStorage.removeItem('oauth_provider');
 
             const isGitHub = (provider === 'github' || (iss && iss.includes('github')));
-            const endpoint = isGitHub 
-                ? 'https://alia-server.onrender.com/api/auth/github' 
-                : 'https://alia-server.onrender.com/api/auth/discord';
+            const endpoint = isGitHub ? 'https://alia-server.onrender.com/api/auth/github' : 'https://alia-server.onrender.com/api/auth/discord';
             const providerName = isGitHub ? 'GitHub' : 'Discord';
-        
             try {
                 const res = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ code: code, redirectUri: window.location.origin + window.location.pathname })
                 });
                 const data = await res.json();
-                if (res.ok) {
-                    handleOAuthSuccess(data);
-                } else {
-                    alert(data.error || `${providerName} authentication failed.`);
-                }
-            } catch (err) {
-                alert(`Network error during ${providerName} sign in.`);
-            }
+                if (res.ok) handleOAuthSuccess(data);
+                else alert(data.error || `${providerName} authentication failed.`);
+            } catch (err) { alert(`Network error during ${providerName} sign in.`); }
         }
         
         async function handleRegister() {
@@ -973,39 +511,24 @@
             const pass = document.getElementById('reg-password').value.trim();
             const email = document.getElementById('reg-email').value.trim();
             const phone = document.getElementById('reg-phone').value.trim();
-
-            if (!user || !pass || !email) { 
-                alert("Please fill in username, password, and recovery email fields."); 
-                return; 
-            }
-    
+            if (!user || !pass || !email) { alert("Please fill in username, password, and recovery email fields."); return; }
             try {
                 let response = await fetch(`https://alia-server.onrender.com/api/check-username?username=${encodeURIComponent(user)}`);
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.exists) {
-                        user = user + "1";
-                        alert(`That username was taken! Your username has automatically been set to: ${user}`);
-                    }
+                    if (data.exists) { user = user + "1"; alert(`That username was taken! Your username has automatically been set to: ${user}`); }
                 }
-
                 const regResponse = await fetch('https://alia-server.onrender.com/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, password: pass, email: email, phone: phone })
                 });
                 const regData = await regResponse.json();
                 if (regResponse.ok) {
                     localStorage.setItem('alia_logged_in_user', user);
                     alert(`Account created successfully! Welcome, ${user}.`);
-                    checkAuth();
-                    switchTab('home-tab');
-                } else {
-                    alert(regData.error || "Registration failed.");
-                }
-            } catch (err) {
-                alert("Network error during registration.");
-            }
+                    checkAuth(); switchTab('home-tab');
+                } else { alert(regData.error || "Registration failed."); }
+            } catch (err) { alert("Network error during registration."); }
         }
         
         async function handleLogin() {
@@ -1013,60 +536,40 @@
             const identifier = document.getElementById('login-identifier').value.trim();
             const pass = document.getElementById('login-password').value.trim();
             if (!identifier || !pass) { alert("Please fill in both fields."); return; }
-    
             try {
                 const response = await fetch('https://alia-server.onrender.com/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ identifier: identifier, password: pass })
                 });
                 const data = await response.json();
                 if (response.ok) {
                     localStorage.setItem('alia_logged_in_user', data.username || identifier);
                     alert(`Welcome back, ${data.username || identifier}!`);
-                    checkAuth();
-                    switchTab('home-tab');
-                } else {
-                    alert(data.error || "Invalid username, email, phone, or password.");
-                }
-            } catch (err) {
-                alert("Network error during login.");
-            }
+                    checkAuth(); switchTab('home-tab');
+                } else { alert(data.error || "Invalid username, email, phone, or password."); }
+            } catch (err) { alert("Network error during login."); }
         }
 
         async function handleForgotPassword() {
             if (!navigator.onLine) return;
             const user = document.getElementById('forgot-username').value.trim();
             const email = document.getElementById('forgot-email').value.trim();
-            if (!user || !email) {
-                alert("Please enter both your username and recovery email.");
-                return;
-            }
-
+            if (!user || !email) { alert("Please enter both your username and recovery email."); return; }
             try {
                 const response = await fetch('https://alia-server.onrender.com/api/forgot-password', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: user, email: email })
                 });
                 const data = await response.json();
-                if (response.ok) {
-                    alert("Password reset instructions have been sent to your email.");
-                    switchView('login');
-                } else {
-                    alert(data.error || "Could not process password reset.");
-                }
-            } catch (err) {
-                alert("Network error during password reset.");
-            }
+                if (response.ok) { alert("Password reset instructions have been sent to your email."); switchView('login'); }
+                else { alert(data.error || "Could not process password reset."); }
+            } catch (err) { alert("Network error during password reset."); }
         }
         
         function logout() {
-            const oldUser = localStorage.getItem('alia_logged_in_user');
             localStorage.removeItem('alia_logged_in_user');
             localStorage.removeItem('last_active_tab');
-            checkAuth();
-            switchTab('home-tab');
+            checkAuth(); switchTab('home-tab');
         }
 
         function previewProfilePic(input) {
@@ -1100,19 +603,15 @@
             formData.append('newPhone', newPhone);
             formData.append('newPassword', newPass);
             formData.append('country', country);
-            if (profilePicInput.files.length > 0) {
-                formData.append('profilePic', profilePicInput.files[0]);
-            }
+            if (profilePicInput.files.length > 0) formData.append('profilePic', profilePicInput.files[0]);
 
             try {
                 const response = await fetch('https://alia-server.onrender.com/api/update-account', {
-                    method: 'POST',
-                    body: formData
+                    method: 'POST', body: formData
                 });
                 const data = await response.json();
                 if (response.ok) {
                     localStorage.setItem('alia_logged_in_user', newUser);
-                    
                     const profileData = { country: country, email: newEmail, phone: newPhone };
                     if (profilePicInput.files.length > 0) {
                         const reader = new FileReader();
@@ -1127,12 +626,8 @@
                         checkAuth();
                     }
                     alert("Account updated successfully!");
-                } else {
-                    alert(data.error || "Update failed.");
-                }
-            } catch (err) {
-                alert("Network error updating account.");
-            }
+                } else { alert(data.error || "Update failed."); }
+            } catch (err) { alert("Network error updating account."); }
         }
 
         async function uploadModToServer() {
@@ -1144,12 +639,7 @@
             const modColor = document.getElementById('mod-color').value;
             const fileInput = document.getElementById('mod-file');
             const iconInput = document.getElementById('mod-icon-file');
-        
-            if (!modName || fileInput.files.length === 0) {
-                alert("Please provide a mod name and select a .zip mod file.");
-                return;
-            }
-        
+            if (!modName || fileInput.files.length === 0) { alert("Please provide a mod name and select a .zip mod file."); return; }
             const formData = new FormData();
             formData.append('username', user);
             formData.append('modName', modName);
@@ -1157,44 +647,28 @@
             formData.append('modTag', modTag);
             formData.append('modColor', modColor);
             formData.append('modFile', fileInput.files[0]);
-            
-            if (iconInput.files.length > 0) {
-                formData.append('iconFile', iconInput.files[0]);
-            }
-        
+            if (iconInput.files.length > 0) formData.append('iconFile', iconInput.files[0]);
             try {
                 alert("Uploading mod file and icon to the server...");
-                const response = await fetch('https://alia-server.onrender.com/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('https://alia-server.onrender.com/api/upload', { method: 'POST', body: formData });
                 const data = await response.json();
-        
                 if (response.ok) {
                     alert("Success! Your mod and icon are uploaded.");
                     document.getElementById('mod-name').value = '';
                     document.getElementById('mod-desc').value = '';
                     document.getElementById('mod-color').value = '#0088ff';
-                    fileInput.value = '';
-                    iconInput.value = '';
+                    fileInput.value = ''; iconInput.value = '';
                     switchTab('mods-tab');
-                } else {
-                    alert(data.error || "Upload failed.");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Upload failed. Check console for details.");
-            }
+                } else { alert(data.error || "Upload failed."); }
+            } catch (err) { console.error(err); alert("Upload failed. Check console for details."); }
         }
 
         function loadMods() {
             if (!navigator.onLine) return;
             fetch('https://alia-server.onrender.com/api/mods?t=' + new Date().getTime())
                 .then(res => res.json())
-                .then(data => {
-                    allMods = data.mods || [];
-                    applyFilters();
-                }).catch(() => document.getElementById('mods-container').innerText = "Failed to load mods.");
+                .then(data => { allMods = data.mods || []; applyFilters(); })
+                .catch(() => document.getElementById('mods-container').innerText = "Failed to load mods.");
         }
 
         function filterByTag(tag, event) {
@@ -1212,7 +686,6 @@
                 (mod.description && mod.description.toLowerCase().includes(query)) ||
                 (mod.download_url && mod.download_url.toLowerCase().includes(query))
             );
-            
             if (currentTag !== 'All') {
                 filtered = filtered.filter(mod => mod.tag === currentTag || (mod.tags && mod.tags.includes(currentTag)));
             }
@@ -1222,32 +695,26 @@
         function displayMods(modsArray, containerId) {
             const container = document.getElementById(containerId);
             container.innerHTML = '';
-            if(!modsArray || modsArray.length === 0) {
-                container.innerHTML = "No mods found.";
-                return;
-            }
+            if(!modsArray || modsArray.length === 0) { container.innerHTML = "No mods found."; return; }
 
             const loggedUser = localStorage.getItem('alia_logged_in_user');
-            const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
             const now = new Date().getTime();
             const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
 
             modsArray.forEach(mod => {
-                const isFavorited = favorites.includes(mod.name);
+                const isFavorited = loggedUser && mod.favoritedBy && mod.favoritedBy.includes(loggedUser);
+                
                 let showUpdateTag = false;
-                if (mod.updated_at && (now - mod.updated_at < twoDaysMs)) {
-                    showUpdateTag = true;
-                }
+                if (mod.updated_at && (now - mod.updated_at < twoDaysMs)) showUpdateTag = true;
 
                 const canDelete = loggedUser && (
-                    loggedUser === 'Ethantobot11' || 
-                    loggedUser === 'Ali Alafandy' || 
+                    loggedUser === 'Ethantobot11' || loggedUser === 'Ali Alafandy' || 
                     (mod.download_url && mod.download_url.includes(`/uploads/${loggedUser}/`))
                 );
 
-                const uploaderProfile = JSON.parse(localStorage.getItem('alia_user_profile_' + mod.uploader) || '{}');
-                const flag = uploaderProfile.country || '🌍';
-                const pfp = uploaderProfile.profilePic || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADdklEQVR4AcSXWahOURSAj3koIkrmSEIoD5IHZUh5kJAxUWR+EBIhIUMpEkKKTAkPyhQeKJHhwUzGzCSSmcx8X+6fa//nnP/c219u6/vX3vusvfc6++y91r4Voyj69T/RAeb/f1JGBzSvWVRvHTHjgNuwWwndoR/kpA6FneDz7ehGkF0yOuAEWxh1FZyGLtANTsJhWAhLYDFshpwMpXCjhGrofMngQD16NYBTcA/ewGrpYCoOhK9yEWyU0Q7eGd9AR2sJdiJcCDjjxHHpOgS+Qk+cUzkEHCOU6DWOhNswFxZeoYCGPAg70p8NtuAahTKNhI4QyjoYHkE1SHGjBCE3B74yKlVm0LoPS8orKCsgmKQ64/C6dS5o02C4ejILyS4oDLv2GDCN7IvZnsIs3SXCgOtYH4RIUkkcYlI4LVKMa/mQiwQH7xu9anxSTFAeKOU3yWEVwYB+jGw1L456Ij3wY/yPldMBuhmfjw3gGHB0wifp6CI8oTYE4UtCUVq3Mw+FwBzwhPdFXwPjvcfTIXqT+DYyGj9ETIVlSHPCeEnbsTYPZUH2c8mVoAw/B+O9kQyibtH6izRGGZDMm1RhJcSDGOpoaRdFMMOG0R6+DEWCafoZ+Aa6Gx9coWYl6FTA66hDFQMrgwGy6roV2YCr+iG4CT8CgNQ/t8psjFlF2VTqhTVyWKcZIGRyYQfcD0By+wn1YA3sh97neUtbGNPyZsqn6PNoVi58qvpUuURQGIq9iTmT895tafhn9+euD+gQDQPHeYCb1QuIm9VPYnk+KA6Hx2ZIGE5QrcIa6ux0VeUlxQ76P/v75qS5QHQk6i4qRFAdyg+d69SgpmKZ/UPbt+qIVnXO5j1qBMeAx9YrmBjxE3T6oQBIccHKXemBgbtWbkMnGQFOLBnUIzZF74AQFN+oetGOiAklwQG/dPL0C81zVCX07s+BWGj3vE9BPwfow9A74AC3Bo4iKkQQHtHSwqxQaQyimYJfdO6GolwcDkJm2F4RHwjoCKvLR6IXUc6/mkOOD5fk2PQWC0izNtyDMxCLnkBqrOtHn+XQWdd7XKtQkZJ9rNj8s4H10XPGYOXBqdO8Yz37Y+ejIYlDyWCyinS9xrBT02UTcBfUd7STUQJVEVm+lgeDYlUywgGRzIjWCU8x8SU2wcyzE0GyYvNwZ5UgYH8vpmaihk9BsAAP//GsBXNQAAAAZJREFUAwAWxc0hZkmO2wAAAABJRU5ErkJggg==';
+                const flag = mod.uploaderCountry || '🌍';
+                
+                const pfp = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADdklEQVR4AcSXWahOURSAj3koIkrmSEIoD5IHZUh5kJAxUWR+EBIhIUMpEkKKTAkPyhQeKJHhwUzGzCSSmcx8X+6fa//nnP/c219u6/vX3vusvfc6++y91r4Voyj69T/RAeb/f1JGBzSvWVRvHTHjgNuwWwndoR/kpA6FneDz7ehGkF0yOuAEWxh1FZyGLtANTsJhWAhLYDFshpwMpXCjhGrofMngQD16NYBTcA/ewGrpYCoOhK9yEWyU0Q7eGd9AR2sJdiJcCDjjxHHpOgS+Qk+cUzkEHCOU6DWOhNswFxZeoYCGPAg70p8NtuAahTKNhI4QyjoYHkE1SHGjBCE3B74yKlVm0LoPS8orKCsgmKQ64/C6dS5o02C4ejILyS4oDLv2GDCN7IvZnsIs3SXCgOtYH4RIUkkcYlI4LVKMa/mQiwQH7xu9anxSTFAeKOU3yWEVwYB+jGw1L456Ij3wY/yPldMBuhmfjw3gGHB0wifp6CI8oTYE4UtCUVq3Mw+FwBzwhPdFXwPjvcfTIXqT+DYyGj9ETIVlSHPCeEnbsTYPZUH2c8mVoAw/B+O9kQyibtH6izRGGZDMm1RhJcSDGOpoaRdFMMOG0R6+DEWCafoZ+Aa6Gx9coWYl6FTA66hDFQMrgwGy6roV2YCr+iG4CT8CgNQ/t8psjFlF2VTqhTVyWKcZIGRyYQfcD0By+wn1YA3sh97neUtbGNPyZsqn6PNoVi58qvpUuURQGIq9iTmT895tafhn9+euD+gQDQPHeYCb1QuIm9VPYnk+KA6Hx2ZIGE5QrcIa6ux0VeUlxQ76P/v75qS5QHQk6i4qRFAdyg+d69SgpmKZ/UPbt+qIVnXO5j1qBMeAx9YrmBjxE3T6oQBIccHKXemBgbtWbkMnGQFOLBnUIzZF74AQFN+oetGOiAklwQG/dPL0C81zVCX07s+BWGj3vE9BPwfow9A74AC3Bo4iKkQQHtHSwqxQaQyimYJfdO6GolwcDkJm2F4RHwjoCKvLR6IXUc6/mkOOD5fk2PQWC0izNtyDMxCLnkBqrOtHn+XQWdd7XKtQkZJ9rNj8s4H10XPGYOXBqdO8Yz37Y+ejIYlDyWCyinS9xrBT02UTcBfUd7STUQJVEVm+lgeDYlUywgGRzIjWCU8x8SU2wcyzE0GyYvNwZ5UgYH8vpmaihk9BsAAP//GsBXNQAAAAZJREFUAwAWxc0hZkmO2wAAAABJRU5ErkJggg==';
 
                 container.innerHTML += `
                     <div class="mod-card" style="border-color: ${mod.color || '#0088ff'}; box-shadow: 0 0 12px ${mod.color ? mod.color + '4D' : 'rgba(0, 136, 255, 0.3)'}">
@@ -1257,8 +724,8 @@
                         <img src="${mod.icon || 'images/default-icon.png'}" alt="${mod.name}" class="mod-icon">
                         <h3>${mod.name}</h3>
                         <div style="display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:8px;">
-                            <img src="${pfp}" style="width:20px; height:20px; border-radius:50%; border:1px solid #00d2ff; object-fit:cover;">
-                            <span style="font-size:12px; color:#00d2ff;">${flag} ${mod.uploader || 'Unknown'}</span>
+                            <span style="font-size:16px;">${flag}</span>
+                            <span style="font-size:12px; color:#00d2ff;">${mod.uploader || 'Unknown'}</span>
                         </div>
                         <p style="font-size: 13px;">${mod.description || ''}</p>
                         <div class="mod-stats">
@@ -1266,68 +733,76 @@
                             <span>⬇️ ${mod.downloads || 0}</span>
                             <span>⭐ ${mod.favorites || 0}</span>
                         </div>
-                        <a href="${mod.download_url}" class="download-btn" target="_blank" style="border-color: ${mod.color || '#00d2ff'}; color: ${mod.color || '#00d2ff'}">Download Mod</a>
+                        <button class="download-btn" onclick="downloadMod('${mod.name}', '${mod.download_url}')" style="border-color: ${mod.color || '#00d2ff'}; color: ${mod.color || '#00d2ff'}">Download Mod</button>
                     </div>
                 `;
             });
         }
 
-        function toggleFavorite(modName) {
-            const loggedUser = localStorage.getItem('alia_logged_in_user');
-            if (!loggedUser) return;
-            let favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
+        function downloadMod(modName, url) {
+            fetch('https://alia-server.onrender.com/api/increment-download', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modName: modName })
+            }).catch(err => console.error(err));
             
-            if (favorites.includes(modName)) {
-                favorites = favorites.filter(name => name !== modName);
-            } else {
-                favorites.push(modName);
-            }
-            localStorage.setItem('alia_favorites_' + loggedUser, JSON.stringify(favorites));
+            window.open(url, '_blank');
             
-            if (!document.getElementById('mods-tab').classList.contains('hidden')) {
+            const mod = allMods.find(m => m.name === modName);
+            if (mod) {
+                mod.downloads = (mod.downloads || 0) + 1;
                 applyFilters();
-            } else if (!document.getElementById('favorites-tab').classList.contains('hidden')) {
-                loadFavorites();
             }
+        }
+
+        async function toggleFavorite(modName) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            if (!loggedUser) { alert("Please login to favorite mods."); return; }
+
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/toggle-favorite', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedUser, modName: modName })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const mod = allMods.find(m => m.name === modName);
+                    if (mod) {
+                        if (!mod.favoritedBy) mod.favoritedBy = [];
+                        if (data.favorited) {
+                            if (!mod.favoritedBy.includes(loggedUser)) mod.favoritedBy.push(loggedUser);
+                        } else {
+                            mod.favoritedBy = mod.favoritedBy.filter(u => u !== loggedUser);
+                        }
+                        mod.favorites = data.favorites;
+                    }
+                    if (!document.getElementById('mods-tab').classList.contains('hidden')) applyFilters();
+                    else if (!document.getElementById('favorites-tab').classList.contains('hidden')) loadFavorites();
+                } else { alert(data.error || "Failed to update favorite."); }
+            } catch (err) { alert("Network error."); }
         }
 
         function loadFavorites() {
             const loggedUser = localStorage.getItem('alia_logged_in_user');
             const container = document.getElementById('favorites-container');
-            if (!loggedUser) {
-                container.innerHTML = "Please login to view your favorite mods.";
-                return;
-            }
-            const favorites = JSON.parse(localStorage.getItem('alia_favorites_' + loggedUser) || '[]');
-            const favMods = allMods.filter(mod => favorites.includes(mod.name));
+            if (!loggedUser) { container.innerHTML = "Please login to view your favorite mods."; return; }
+            const favMods = allMods.filter(mod => mod.favoritedBy && mod.favoritedBy.includes(loggedUser));
             displayMods(favMods, 'favorites-container');
-            if (favMods.length === 0) {
-                container.innerHTML = "You haven't favorited any mods yet.";
-            }
+            if (favMods.length === 0) container.innerHTML = "You haven't favorited any mods yet.";
         }
 
         function loadMyMods() {
             if (!navigator.onLine) return;
             const loggedUser = localStorage.getItem('alia_logged_in_user');
             const container = document.getElementById('my-mods-container');
-            if (!loggedUser) {
-                container.innerHTML = "Please login to view your uploaded mods.";
-                return;
-            }
-
+            if (!loggedUser) { container.innerHTML = "Please login to view your uploaded mods."; return; }
             fetch('https://alia-server.onrender.com/api/mods?t=' + new Date().getTime())
                 .then(res => res.json())
                 .then(data => {
                     const mods = data.mods || [];
                     const isMod = (loggedUser === 'Ethantobot11' || loggedUser === 'Ali Alafandy');
                     const userMods = mods.filter(mod => isMod || (mod.download_url && mod.download_url.includes(`/uploads/${loggedUser}/`)));
-                    
                     container.innerHTML = '';
-                    if (userMods.length === 0) {
-                        container.innerHTML = "You haven't uploaded any mods yet.";
-                        return;
-                    }
-
+                    if (userMods.length === 0) { container.innerHTML = "You haven't uploaded any mods yet."; return; }
                     displayMods(userMods, 'my-mods-container');
                 }).catch(() => container.innerText = "Error loading your mods.");
         }
@@ -1338,20 +813,14 @@
             const select = document.getElementById('update-mod-select');
             select.innerHTML = '<option value="">-- Select Your Mod --</option>';
             if (!loggedUser) return;
-
             try {
                 const res = await fetch('https://alia-server.onrender.com/api/mods');
                 const data = await res.json();
                 const mods = data.mods || [];
                 const isMod = (loggedUser === 'Ethantobot11' || loggedUser === 'Ali Alafandy');
                 const userMods = mods.filter(mod => isMod || (mod.download_url && mod.download_url.includes(`/uploads/${loggedUser}/`)));
-                
-                userMods.forEach(mod => {
-                    select.innerHTML += `<option value="${mod.name}">${mod.name}</option>`;
-                });
-            } catch (err) {
-                console.error("Could not load user mods for dropdown");
-            }
+                userMods.forEach(mod => { select.innerHTML += `<option value="${mod.name}">${mod.name}</option>`; });
+            } catch (err) { console.error("Could not load user mods for dropdown"); }
         }
 
         async function updateExistingMod() {
@@ -1359,36 +828,18 @@
             const user = localStorage.getItem('alia_logged_in_user');
             const modName = document.getElementById('update-mod-select').value;
             const fileInput = document.getElementById('update-mod-file');
-
-            if (!modName || fileInput.files.length === 0) {
-                alert("Please select a mod and choose a new .zip file version.");
-                return;
-            }
-
+            if (!modName || fileInput.files.length === 0) { alert("Please select a mod and choose a new .zip file version."); return; }
             const formData = new FormData();
             formData.append('username', user);
             formData.append('modName', modName);
             formData.append('modFile', fileInput.files[0]);
-
             try {
                 alert("Uploading updated mod file...");
-                const response = await fetch('https://alia-server.onrender.com/api/update-mod-file', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('https://alia-server.onrender.com/api/update-mod-file', { method: 'POST', body: formData });
                 const data = await response.json();
-
-                if (response.ok) {
-                    alert("Success! Your mod has been updated.");
-                    fileInput.value = '';
-                    switchTab('mods-tab');
-                } else {
-                    alert(data.error || "Update failed.");
-                }
-            } catch (err) {
-                console.error(err);
-                alert("Update failed. Check console for details.");
-            }
+                if (response.ok) { alert("Success! Your mod has been updated."); fileInput.value = ''; switchTab('mods-tab'); }
+                else { alert(data.error || "Update failed."); }
+            } catch (err) { console.error(err); alert("Update failed. Check console for details."); }
         }
     </script>
 </body>
