@@ -15,9 +15,20 @@ app.use(express.json());
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SECRET_KEY);
 const BUCKET_NAME = 'mods-bucket';
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+})
     .then(() => console.log('Connected to MongoDB successfully'))
     .catch(err => console.error('MongoDB connection error:', err));
+
+mongoose.connection.on('disconnected', () => {
+    console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('reconnected', () => {
+    console.log('✅ MongoDB reconnected successfully!');
+});
 
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
@@ -45,6 +56,14 @@ const modSchema = new mongoose.Schema({
 const Mod = mongoose.model('Mod', modSchema);
 
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        message: 'Server is running and healthy',
+        timestamp: new Date().toISOString()
+    });
+});
 
 app.get('/api/check-username', async (req, res) => {
     const { username } = req.query;
@@ -178,9 +197,7 @@ app.post('/api/delete-account', async (req, res) => {
         }
 
         await Mod.deleteMany({ uploader: username });
-
         await supabase.storage.from(BUCKET_NAME).remove([`${username}/profile.png`]);
-
         await User.deleteOne({ username: username });
 
         return res.json({ success: true, message: "Account and all associated data deleted successfully." });
@@ -425,4 +442,4 @@ app.post('/api/auth/github', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
