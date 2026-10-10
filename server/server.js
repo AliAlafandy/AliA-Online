@@ -22,13 +22,8 @@ mongoose.connect(process.env.MONGO_URI, {
     .then(() => console.log('Connected to MongoDB successfully'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-mongoose.connection.on('disconnected', () => {
-    console.log('⚠️ MongoDB disconnected. Attempting to reconnect...');
-});
-
-mongoose.connection.on('reconnected', () => {
-    console.log('✅ MongoDB reconnected successfully!');
-});
+mongoose.connection.on('disconnected', () => console.log('⚠️ MongoDB disconnected. Attempting to reconnect...'));
+mongoose.connection.on('reconnected', () => console.log('✅ MongoDB reconnected successfully!'));
 
 const userSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
@@ -51,7 +46,10 @@ const modSchema = new mongoose.Schema({
     size: { type: String, default: "Unknown" },
     downloads: { type: Number, default: 0 },
     favorites: { type: Number, default: 0 },
-    favoritedBy: [{ type: String }], 
+    favoritedBy: [{ type: String }],
+    likes: { type: Number, default: 0 },
+    likedBy: [{ type: String }],
+    followers: [{ type: String }],
     uploaderCountry: { type: String, default: "🌍" },
     updated_at: { type: Number, required: true }
 });
@@ -60,11 +58,7 @@ const Mod = mongoose.model('Mod', modSchema);
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
 
 app.get('/api/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
-        message: 'Server is running and healthy',
-        timestamp: new Date().toISOString()
-    });
+    res.status(200).json({ status: 'ok', message: 'Server is running and healthy', timestamp: new Date().toISOString() });
 });
 
 app.get('/api/check-username', async (req, res) => {
@@ -73,9 +67,7 @@ app.get('/api/check-username', async (req, res) => {
     try {
         const user = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
         return res.json({ exists: !!user });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/register', async (req, res) => {
@@ -86,9 +78,7 @@ app.post('/api/register', async (req, res) => {
         if (existingUser) return res.status(400).json({ error: "Username already taken." });
         await User.create({ username, password, email, phone });
         return res.status(200).json({ success: true, message: "Registered successfully." });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/set-username', async (req, res) => {
@@ -97,18 +87,11 @@ app.post('/api/auth/set-username', async (req, res) => {
     try {
         const taken = await User.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
         if (taken) return res.status(400).json({ error: "Username is already taken." });
-
         let user = await User.findOne({ email });
-        if (user) {
-            user.username = username;
-            await user.save();
-        } else {
-            user = await User.create({ username, email, password: "" });
-        }
+        if (user) { user.username = username; await user.save(); } 
+        else { user = await User.create({ username, email, password: "" }); }
         return res.json({ success: true, username: user.username });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/login', async (req, res) => {
@@ -116,18 +99,12 @@ app.post('/api/login', async (req, res) => {
     if (!identifier || !password) return res.status(400).json({ error: "Identifier and password required." });
     try {
         const user = await User.findOne({ 
-            $or: [
-                { username: { $regex: new RegExp(`^${identifier}$`, 'i') } },
-                { email: { $regex: new RegExp(`^${identifier}$`, 'i') } },
-                { phone: identifier }
-            ],
+            $or: [ { username: { $regex: new RegExp(`^${identifier}$`, 'i') } }, { email: { $regex: new RegExp(`^${identifier}$`, 'i') } }, { phone: identifier } ],
             password 
         });
         if (!user) return res.status(400).json({ error: "Invalid username, email, phone, or password." });
         return res.status(200).json({ success: true, message: "Login successful.", username: user.username });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/update-account', upload.single('profilePic'), async (req, res) => {
@@ -136,40 +113,31 @@ app.post('/api/update-account', upload.single('profilePic'), async (req, res) =>
     try {
         const user = await User.findOne({ username: oldUsername });
         if (!user) return res.status(404).json({ error: "User not found." });
-        
         if (newUsername !== oldUsername) {
             const taken = await User.findOne({ username: { $regex: new RegExp(`^${newUsername}$`, 'i') } });
             if (taken) return res.status(400).json({ error: "Username already taken." });
         }
-
         user.username = newUsername;
         if (newEmail) user.email = newEmail;
         if (newPhone) user.phone = newPhone;
-        
         if (country) {
             user.country = country;
             await Mod.updateMany({ uploader: newUsername }, { uploaderCountry: country });
         }
-        
         if (newPassword && newPassword.trim() !== "") user.password = newPassword;
 
         if (req.file) {
             const fileBuffer = fs.readFileSync(req.file.path);
             const filePath = `${newUsername}/profile.png`;
-            const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, {
-                contentType: req.file.mimetype, upsert: true
-            });
+            const { error } = await supabase.storage.from(BUCKET_NAME).upload(filePath, fileBuffer, { contentType: req.file.mimetype, upsert: true });
             if (error) throw error;
             const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(filePath);
             user.profilePic = data.publicUrl;
             fs.unlinkSync(req.file.path);
         }
-
         await user.save();
         return res.json({ success: true, message: "Account updated successfully.", username: newUsername });
-    } catch (err) {
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/delete-account', async (req, res) => {
@@ -180,28 +148,20 @@ app.post('/api/delete-account', async (req, res) => {
         for (const mod of userMods) {
             const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
             const ownerName = match ? match[1] : username;
-            await supabase.storage.from(BUCKET_NAME).remove([
-                `${ownerName}/${mod.name}.zip`, `${ownerName}/${mod.name}_icon.png`,
-                `${ownerName}/${mod.name}_icon.jpg`, `${ownerName}/${mod.name}_icon.jpeg`
-            ]);
+            await supabase.storage.from(BUCKET_NAME).remove([`${ownerName}/${mod.name}.zip`, `${ownerName}/${mod.name}_icon.png`, `${ownerName}/${mod.name}_icon.jpg`, `${ownerName}/${mod.name}_icon.jpeg`]);
         }
         await Mod.deleteMany({ uploader: username });
         await supabase.storage.from(BUCKET_NAME).remove([`${username}/profile.png`]);
         await User.deleteOne({ username: username });
         return res.json({ success: true, message: "Account and all associated data deleted successfully." });
-    } catch (err) {
-        console.error("Error deleting account:", err);
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { return res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/mods', async (req, res) => {
     try {
         const mods = await Mod.find({});
         res.json({ mods });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/increment-download', async (req, res) => {
@@ -209,14 +169,9 @@ app.post('/api/increment-download', async (req, res) => {
     if (!modName) return res.status(400).json({ error: "Missing modName" });
     try {
         const mod = await Mod.findOne({ name: modName });
-        if (mod) {
-            mod.downloads = (mod.downloads || 0) + 1;
-            await mod.save();
-        }
+        if (mod) { mod.downloads = (mod.downloads || 0) + 1; await mod.save(); }
         res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/toggle-favorite', async (req, res) => {
@@ -225,39 +180,66 @@ app.post('/api/toggle-favorite', async (req, res) => {
     try {
         const mod = await Mod.findOne({ name: modName });
         if (!mod) return res.status(404).json({ error: "Mod not found" });
-        
         if (!mod.favoritedBy) mod.favoritedBy = [];
-        
         const index = mod.favoritedBy.indexOf(username);
         if (index > -1) {
             mod.favoritedBy.splice(index, 1);
             mod.favorites = Math.max(0, (mod.favorites || 0) - 1);
-            await mod.save();
-            return res.json({ success: true, favorited: false, favorites: mod.favorites });
         } else {
             mod.favoritedBy.push(username);
             mod.favorites = (mod.favorites || 0) + 1;
-            await mod.save();
-            return res.json({ success: true, favorited: true, favorites: mod.favorites });
         }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+        await mod.save();
+        res.json({ success: true, favorited: index === -1, favorites: mod.favorites });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/toggle-like', async (req, res) => {
+    const { username, modName } = req.body;
+    if (!username || !modName) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const mod = await Mod.findOne({ name: modName });
+        if (!mod) return res.status(404).json({ error: "Mod not found" });
+        if (!mod.likedBy) mod.likedBy = [];
+        const index = mod.likedBy.indexOf(username);
+        if (index > -1) {
+            mod.likedBy.splice(index, 1);
+            mod.likes = Math.max(0, (mod.likes || 0) - 1);
+        } else {
+            mod.likedBy.push(username);
+            mod.likes = (mod.likes || 0) + 1;
+        }
+        await mod.save();
+        res.json({ success: true, liked: index === -1, likes: mod.likes });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/toggle-follow', async (req, res) => {
+    const { username, modName } = req.body;
+    if (!username || !modName) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const mod = await Mod.findOne({ name: modName });
+        if (!mod) return res.status(404).json({ error: "Mod not found" });
+        if (!mod.followers) mod.followers = [];
+        const index = mod.followers.indexOf(username);
+        if (index > -1) {
+            mod.followers.splice(index, 1);
+        } else {
+            mod.followers.push(username);
+        }
+        await mod.save();
+        res.json({ success: true, following: index === -1, followersCount: mod.followers.length });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/upload', upload.any(), async (req, res) => {
     const { username, modName, modDesc, modTag, modColor } = req.body;
     const files = req.files;
-    if (!username || !modName || !files || files.length === 0) {
-        return res.status(400).json({ error: "Missing required fields or files." });
-    }
+    if (!username || !modName || !files || files.length === 0) return res.status(400).json({ error: "Missing required fields or files." });
     try {
         const user = await User.findOne({ username });
         const userCountry = user ? user.country : "🌍";
-
-        let downloadUrl = "";
-        let iconUrl = "images/default-icon.png";
-        let fileSize = "Unknown";
+        let downloadUrl = "", iconUrl = "images/default-icon.png", fileSize = "Unknown";
 
         for (const file of files) {
             const fileBuffer = fs.readFileSync(file.path);
@@ -278,24 +260,16 @@ app.post('/api/upload', upload.any(), async (req, res) => {
             }
             fs.unlinkSync(file.path);
         }
-
         if (!downloadUrl) return res.status(400).json({ error: "Missing required .zip mod file." });
 
         const now = new Date().getTime();
         await Mod.findOneAndUpdate(
             { name: modName },
-            {
-                name: modName, description: modDesc || "", download_url: downloadUrl, icon: iconUrl,
-                uploader: username, tag: modTag || "Other", color: modColor || "#0088ff", size: fileSize,
-                uploaderCountry: userCountry, favoritedBy: [], downloads: 0, favorites: 0, updated_at: now
-            },
+            { name: modName, description: modDesc || "", download_url: downloadUrl, icon: iconUrl, uploader: username, tag: modTag || "Other", color: modColor || "#0088ff", size: fileSize, uploaderCountry: userCountry, favoritedBy: [], likedBy: [], followers: [], downloads: 0, favorites: 0, likes: 0, updated_at: now },
             { upsert: true, new: true }
         );
         res.json({ success: true, download_url: downloadUrl, icon_url: iconUrl });
-    } catch (err) {
-        console.error("UPLOAD CRASH:", err);
-        res.status(500).json({ error: err.message });
-    }
+    } catch (err) { console.error("UPLOAD CRASH:", err); res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
@@ -318,10 +292,7 @@ app.post('/api/update-mod-file', upload.single('modFile'), async (req, res) => {
         mod.updated_at = new Date().getTime();
         await mod.save();
         return res.json({ success: true, message: "Mod file updated successfully." });
-    } catch (err) {
-        console.error("UPDATE MOD FILE ERROR:", err);
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { console.error("UPDATE MOD FILE ERROR:", err); return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/delete-mod', async (req, res) => {
@@ -333,16 +304,10 @@ app.post('/api/delete-mod', async (req, res) => {
         if (!mod || (!isMod && mod.uploader !== username)) return res.status(404).json({ error: "Mod not found or unauthorized." });
         const match = mod.download_url.match(/\/storage\/v1\/object\/public\/[^/]+\/([^/]+)\//);
         const ownerName = match ? match[1] : mod.uploader;
-        await supabase.storage.from(BUCKET_NAME).remove([
-            `${ownerName}/${modName}.zip`, `${ownerName}/${modName}_icon.png`,
-            `${ownerName}/${modName}_icon.jpg`, `${ownerName}/${modName}_icon.jpeg`
-        ]);
+        await supabase.storage.from(BUCKET_NAME).remove([`${ownerName}/${modName}.zip`, `${ownerName}/${modName}_icon.png`, `${ownerName}/${modName}_icon.jpg`, `${ownerName}/${modName}_icon.jpeg`]);
         await Mod.deleteOne({ name: modName });
         return res.json({ success: true, message: "Mod deleted successfully." });
-    } catch (err) {
-        console.error("Error deleting mod:", err);
-        return res.status(500).json({ error: err.message });
-    }
+    } catch (err) { console.error("Error deleting mod:", err); return res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/google', async (req, res) => {
@@ -357,41 +322,31 @@ app.post('/api/auth/google', async (req, res) => {
         let user = await User.findOne({ $or: [{ email }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
         if (!user) return res.json({ needsUsernameSetup: true, email: email, suggestedUsername: baseUsername });
         return res.json({ success: true, username: user.username });
-    } catch (err) {
-        return res.status(500).json({ error: "Google authentication failed." });
-    }
+    } catch (err) { return res.status(500).json({ error: "Google authentication failed." }); }
 });
 
 app.post('/api/auth/discord', async (req, res) => {
     const { code, redirectUri } = req.body;
     if (!code) return res.status(400).json({ error: "Discord auth code required." });
-    const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-    const CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
     try {
-        const tokenParams = new URLSearchParams({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, grant_type: 'authorization_code', code: code, redirect_uri: redirectUri });
+        const tokenParams = new URLSearchParams({ client_id: process.env.DISCORD_CLIENT_ID, client_secret: process.env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code', code: code, redirect_uri: redirectUri });
         const tokenRes = await fetch('https://discord.com/api/oauth2/token', { method: 'POST', body: tokenParams, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
         const tokenData = await tokenRes.json();
         if (!tokenRes.ok) return res.status(400).json({ error: "Failed to exchange Discord code." });
         const userRes = await fetch('https://discord.com/api/users/@me', { headers: { authorization: `${tokenData.token_type} ${tokenData.access_token}` } });
         const discordUser = await userRes.json();
         if (!userRes.ok) return res.status(400).json({ error: "Failed to fetch Discord user profile." });
-        const email = discordUser.email;
-        const baseUsername = discordUser.username;
-        let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
-        if (!user) return res.json({ needsUsernameSetup: true, email: email || `${discordUser.id}@discord.placeholder`, suggestedUsername: baseUsername });
+        let user = await User.findOne({ $or: [{ email: discordUser.email || "" }, { username: { $regex: new RegExp(`^${discordUser.username}$`, 'i') } }] });
+        if (!user) return res.json({ needsUsernameSetup: true, email: discordUser.email || `${discordUser.id}@discord.placeholder`, suggestedUsername: discordUser.username });
         return res.json({ success: true, username: user.username });
-    } catch (err) {
-        return res.status(500).json({ error: "Discord authentication failed." });
-    }
+    } catch (err) { return res.status(500).json({ error: "Discord authentication failed." }); }
 });
 
 app.post('/api/auth/github', async (req, res) => {
     const { code, redirectUri } = req.body;
     if (!code) return res.status(400).json({ error: "GitHub auth code required." });
-    const CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-    const CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
     try {
-        const tokenRes = await fetch('https://github.com/login/oauth/access_token', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code: code, redirect_uri: redirectUri }) });
+        const tokenRes = await fetch('https://github.com/login/oauth/access_token', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ client_id: process.env.GITHUB_CLIENT_ID, client_secret: process.env.GITHUB_CLIENT_SECRET, code: code, redirect_uri: redirectUri }) });
         const tokenData = await tokenRes.json();
         if (!tokenRes.ok || tokenData.error) return res.status(400).json({ error: tokenData.error_description || "Failed to exchange GitHub code." });
         const userRes = await fetch('https://api.github.com/user', { headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'Ali-A-App' } });
@@ -402,17 +357,15 @@ app.post('/api/auth/github', async (req, res) => {
             const emailRes = await fetch('https://api.github.com/user/emails', { headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'User-Agent': 'Ali-A-App' } });
             if (emailRes.ok) {
                 const emails = await emailRes.json();
-                const primaryEmailObj = emails.find(e => e.primary && e.verified);
-                if (primaryEmailObj) email = primaryEmailObj.email;
+                const primary = emails.find(e => e.primary && e.verified);
+                if (primary) email = primary.email;
             }
         }
         const baseUsername = githubUser.login || githubUser.name || "GitHubUser";
         let user = await User.findOne({ $or: [{ email: email || "" }, { username: { $regex: new RegExp(`^${baseUsername}$`, 'i') } }] });
         if (!user) return res.json({ needsUsernameSetup: true, email: email || `${githubUser.id}@github.placeholder`, suggestedUsername: baseUsername });
         return res.json({ success: true, username: user.username });
-    } catch (err) {
-        return res.status(500).json({ error: "GitHub authentication failed." });
-    }
+    } catch (err) { return res.status(500).json({ error: "GitHub authentication failed." }); }
 });
 
 const PORT = process.env.PORT || 3000;
