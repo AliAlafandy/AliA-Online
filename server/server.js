@@ -443,6 +443,55 @@ app.post('/api/auth/google', async (req, res) => {
     } catch (err) { return res.status(500).json({ error: "Google authentication failed." }); }
 });
 
+app.get('/api/user/profile', async (req, res) => {
+    const { username } = req.query;
+    const viewerUsername = req.headers['x-viewer-username'];
+    
+    if (!username) return res.status(400).json({ error: "Username required." });
+    
+    try {
+        const user = await User.findOne({ username }).select('-password -pushToken');
+        if (!user) return res.status(404).json({ error: "User not found." });
+        
+        const isAdmin = (user.username === 'Ethantobot11' || user.username === 'Ali Alafandy');
+        
+        let isFriend = false;
+        let hasPendingRequest = false;
+        
+        if (viewerUsername) {
+            const viewer = await User.findOne({ username: viewerUsername });
+            if (viewer) {
+                isFriend = viewer.friends.includes(user.username);
+                const pendingReq = viewer.friendRequests.find(req => req.from === user.username);
+                hasPendingRequest = !!pendingReq;
+            }
+        }
+        
+        res.json({
+            username: user.username,
+            country: user.country,
+            profilePic: user.profilePic,
+            isAdmin: isAdmin,
+            isFriend: isFriend,
+            hasPendingRequest: hasPendingRequest
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/user/mods', async (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: "Username required." });
+    
+    try {
+        const mods = await Mod.find({ uploader: username }).sort({ updated_at: -1 });
+        res.json({ mods });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/auth/discord', async (req, res) => {
     const { code, redirectUri } = req.body;
     if (!code) return res.status(400).json({ error: "Discord auth code required." });
