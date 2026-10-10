@@ -105,6 +105,7 @@
                 <li onclick="switchTab('home-tab')" id="menu-home" class="active">Home Menu 🏠</li>
                 <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods 🔍</li>
                 <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites ⭐</li>
+                <li onclick="switchTab('friends-tab')" id="menu-friends">Friends 👥</li>
                 <li onclick="switchTab('upload-tab')" id="menu-upload" class="hidden">Upload Mod ⬆️</li>
                 <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods 🗂</li>
                 <li onclick="switchTab('account-tab')" id="menu-account">Your Account 👤</li>
@@ -139,6 +140,25 @@
 
             <div id="favorites-tab" class="tab-content hidden">
                 <div id="favorites-container">Please login to view your favorite mods.</div>
+            </div>
+
+            <div id="friends-tab" class="tab-content hidden">
+                <div class="panel" style="max-width: 600px;">
+                    <h3>Friend Requests</h3>
+                    <div id="friend-requests-container" style="text-align: left; margin-bottom: 20px;">
+                        <p style="color: #0088ff;">Loading requests...</p>
+                    </div>
+                    
+                    <h3 style="border-top: 1px solid #0055ff; padding-top: 15px;">Your Friends</h3>
+                    <div id="friends-list-container" style="text-align: left;">
+                        <p style="color: #0088ff;">Loading friends...</p>
+                    </div>
+            
+                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <input type="text" id="friend-search-input" placeholder="Enter username to add..." style="width: 60%; margin: 0;">
+                        <button onclick="sendFriendRequest()" style="width: 35%; margin: 0;">Send Request</button>
+                    </div>
+                </div>
             </div>
 
             <div id="upload-tab" class="tab-content hidden">
@@ -300,10 +320,37 @@
             }, 3500);
         }
 
+        async function initPushNotifications() {
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+                const { PushNotifications } = window.Capacitor.Plugins;
+                
+                const perm = await PushNotifications.requestPermissions();
+                if (perm.receive === 'granted') {
+                    await PushNotifications.register();
+                    
+                    PushNotifications.addListener('registration', async (token) => {
+                        const loggedUser = localStorage.getItem('alia_logged_in_user');
+                        if (loggedUser) {
+                            await fetch('https://alia-server.onrender.com/api/save-push-token', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: loggedUser, token: token.value })
+                            });
+                        }
+                    });
+        
+                    PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                        showNotification(`${notification.title}: ${notification.body}`, "info");
+                    });
+                }
+            }
+        }
+
         window.onload = function() {
             updateOnlineStatus();
             checkAuth();
             checkOAuthCallbacks();
+            initPushNotifications();
             const lastTab = localStorage.getItem('last_active_tab');
             if (lastTab && document.getElementById(lastTab)) { switchTab(lastTab); } 
             else { switchTab('home-tab'); }
@@ -421,12 +468,119 @@
             } catch (err) { showNotification("Network error while trying to delete account.", "error"); }
         }
 
+        async function loadFriends() {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            if (!loggedUser) return;
+            
+            try {
+                const res = await fetch(`https://alia-server.onrender.com/api/friends?username=${encodeURIComponent(loggedUser)}`);
+                const data = await res.json();
+                
+                // Render Requests
+                const reqContainer = document.getElementById('friend-requests-container');
+                if (data.requests && data.requests.length > 0) {
+                    reqContainer.innerHTML = data.requests.map(req => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #0055ff;">
+                            <span style="color: #00d2ff; font-weight: bold;">${req.from}</span>
+                            <div>
+                                <button onclick="acceptFriend('${req.from}')" style="padding: 5px 10px; font-size: 12px; margin-right: 5px; background: #00ff88; color: #000;">Accept</button>
+                                <button onclick="rejectFriend('${req.from}')" style="padding: 5px 10px; font-size: 12px; background: #ff4444;">Reject</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    reqContainer.innerHTML = '<p style="color: #666;">No pending friend requests.</p>';
+                }
+        
+                // Render Friends
+                const friendsContainer = document.getElementById('friends-list-container');
+                if (data.friends && data.friends.length > 0) {
+                    friendsContainer.innerHTML = data.friends.map(friend => `
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: #000; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #00d2ff;">
+                            <span style="color: #fff;">${friend}</span>
+                            <button onclick="removeFriend('${friend}')" style="padding: 5px 10px; font-size: 12px; background: #ff4444;">Remove</button>
+                        </div>
+                    `).join('');
+                } else {
+                    friendsContainer.innerHTML = '<p style="color: #666;">You have no friends yet. Add someone above!</p>';
+                }
+            } catch (err) {
+                console.error("Failed to load friends", err);
+            }
+        }
+        
+        async function sendFriendRequest() {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            const targetUser = document.getElementById('friend-search-input').value.trim();
+            if (!loggedUser || !targetUser) { showNotification("Please enter a username.", "error"); return; }
+        
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/friend/request', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ from: loggedUser, to: targetUser })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showNotification(data.message, "success");
+                    document.getElementById('friend-search-input').value = '';
+                    loadFriends();
+                } else {
+                    showNotification(data.error, "error");
+                }
+            } catch (err) { showNotification("Network error.", "error"); }
+        }
+        
+        async function acceptFriend(friendUsername) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/friend/accept', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedUser, friendUsername })
+                });
+                const data = await res.json();
+                if (res.ok) { showNotification(data.message, "success"); loadFriends(); }
+                else { showNotification(data.error, "error"); }
+            } catch (err) { showNotification("Network error.", "error"); }
+        }
+        
+        async function rejectFriend(friendUsername) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/friend/reject', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedUser, friendUsername })
+                });
+                const data = await res.json();
+                if (res.ok) { showNotification(data.message, "success"); loadFriends(); }
+                else { showNotification(data.error, "error"); }
+            } catch (err) { showNotification("Network error.", "error"); }
+        }
+        
+        async function removeFriend(friendUsername) {
+            const loggedUser = localStorage.getItem('alia_logged_in_user');
+            if (!confirm(`Remove ${friendUsername} from your friends?`)) return;
+            try {
+                const res = await fetch('https://alia-server.onrender.com/api/friend/remove', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: loggedUser, friendUsername })
+                });
+                const data = await res.json();
+                if (res.ok) { showNotification(data.message, "success"); loadFriends(); }
+                else { showNotification(data.error, "error"); }
+            } catch (err) { showNotification("Network error.", "error"); }
+        }
+
         function switchView(view) {
             document.getElementById('login-form').classList.add('hidden');
             document.getElementById('register-form').classList.add('hidden');
             document.getElementById('forgot-form').classList.add('hidden');
             if (view === 'register') document.getElementById('register-form').classList.remove('hidden');
             else if (view === 'forgot') document.getElementById('forgot-form').classList.remove('hidden');
+            } else if (tabId === 'friends-tab') { 
+                document.getElementById('menu-friends').classList.add('active'); 
+                document.getElementById('page-title').innerText = "Friends & Requests 👥"; 
+                loadFriends();
+            } 
             else document.getElementById('login-form').classList.remove('hidden');
         }
 
