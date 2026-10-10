@@ -23,7 +23,7 @@
         .menu-toggle-btn { display: none; position: fixed; top: 15px; left: 15px; z-index: 200; background: #030712; border: 1px solid #00d2ff; color: #00d2ff; border-radius: 6px; width: 42px; height: 42px; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
         .profile-corner { position: fixed; top: 15px; right: 15px; z-index: 150; display: flex; align-items: center; gap: 10px; }
         .profile-img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #00d2ff; object-fit: cover; background-color: #030712; cursor: pointer; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
-        .profile-img-large { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00d2ff; object-fit: cover; margin-bottom: 10px; box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
+        .profile-img-large { width: 80px; height: 80px; border-radius: 50%; border: 2px solid #00d2ff; object-fit: cover; margin: 0 auto 10px; display: block; box-shadow: 0 0 15px rgba(0, 210, 255, 0.4); }
         h1 { color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.8), 0 0 20px rgba(0, 100, 255, 0.5); letter-spacing: 2px; margin-top: 0; }
         h3 { color: #0088ff; text-shadow: 0 0 8px rgba(0, 136, 255, 0.7); }
         .panel { background: #030712; padding: 25px; margin: 20px auto; max-width: 450px; border-radius: 12px; border: 1px solid #00d2ff; box-shadow: 0 0 15px rgba(0, 210, 255, 0.2), inset 0 0 10px rgba(0, 136, 255, 0.1); }
@@ -72,6 +72,34 @@
         .follow-btn:hover { border-color: #00d2ff; color: #00d2ff; }
         .follow-btn.following { background: #00d2ff; border-color: #00d2ff; color: black; }
 
+        /* Profile section styles */
+        .profile-section { text-align: center; }
+        .profile-image-container { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .profile-image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .flag-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            font-size: 24px;
+            background: #030712;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #00d2ff;
+        }
+
         @media (max-width: 768px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.mobile-open { transform: translateX(0); }
@@ -103,9 +131,9 @@
             <h2>Ali-A Online</h2>
             <ul class="sidebar-menu">
                 <li onclick="switchTab('home-tab')" id="menu-home" class="active">Home Menu 🏠</li>
-                <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods 🔍</li>
-                <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites ⭐</li>
-                <li onclick="switchTab('friends-tab')" id="menu-friends">Friends 👥</li>
+                <li onclick="switchTab('mods-tab')" id="menu-mods">Browse Mods </li>
+                <li onclick="switchTab('favorites-tab')" id="menu-favorites">Favorites </li>
+                <li onclick="switchTab('friends-tab')" id="menu-friends">Friends </li>
                 <li onclick="switchTab('upload-tab')" id="menu-upload" class="hidden">Upload Mod ⬆️</li>
                 <li onclick="switchTab('my-mods-tab')" id="menu-mymods">Your Mods 🗂</li>
                 <li onclick="switchTab('account-tab')" id="menu-account">Your Account 👤</li>
@@ -270,8 +298,13 @@
 
                 <div class="panel hidden" id="account-panel">
                     <h3>Account Management</h3>
-                    <div style="text-align: center;">
-                        <img id="account-profile-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23030712'/><circle cx='50' cy='40' r='20' fill='%2300d2ff'/><path d='M20 90 Q50 60 80 90' fill='%2300d2ff'/></svg>" class="profile-img-large">
+                    <div class="profile-section">
+                        <div class="profile-image-container">
+                            <div class="profile-image-wrapper">
+                                <img id="account-profile-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23030712'/><circle cx='50' cy='40' r='20' fill='%2300d2ff'/><path d='M20 90 Q50 60 80 90' fill='%2300d2ff'/></svg>" class="profile-img-large">
+                                <div id="account-profile-flag" class="flag-badge"></div>
+                            </div>
+                        </div>
                         <input type="file" id="update-profile-pic" accept="image/*" style="display:none" onchange="previewProfilePic(this)">
                         <button onclick="document.getElementById('update-profile-pic').click()" style="margin-top:10px; font-size:12px; padding: 8px;">Change Profile Picture</button>
                     </div>
@@ -282,32 +315,32 @@
                         <option value="❌">❌ Hidden / No Flag</option>
                         <option value="🇺🇸">🇺🇸 United States</option>
                         <option value="🇬🇧">🇬🇧 United Kingdom</option>
-                        <option value="🇸🇦">🇸🇦 Saudi Arabia</option>
+                        <option value="🇸🇦">🇸 Saudi Arabia</option>
                         <option value="🇪🇬">🇪🇬 Egypt</option>
-                        <option value="🇦🇪">🇦🇪 UAE</option>
+                        <option value="🇦🇪">🇪 UAE</option>
                         <option value="🇯🇴">🇯🇴 Jordan</option>
                         <option value="🇮🇶">🇮🇶 Iraq</option>
                         <option value="🇾🇪">🇾🇪 Yemen</option>
-                        <option value="🇸🇾">🇸🇾 Syria</option>
+                        <option value="🇸🇾">🇸 Syria</option>
                         <option value="🇱🇧">🇱🇧 Lebanon</option>
-                        <option value="🇹🇳">🇹🇳 Tunisia</option>
+                        <option value="🇹🇳">🇳 Tunisia</option>
                         <option value="🇩🇿">🇩🇿 Algeria</option>
                         <option value="🇲🇦">🇲🇦 Morocco</option>
-                        <option value="🇸🇩">🇸🇩 Sudan</option>
+                        <option value="🇸🇩">🇸 Sudan</option>
                         <option value="🇱🇾">🇱🇾 Libya</option>
-                        <option value="🇴🇲">🇴🇲 Oman</option>
+                        <option value="🇴🇲">🇴 Oman</option>
                         <option value="🇰🇼">🇰🇼 Kuwait</option>
-                        <option value="🇶🇦">🇶🇦 Qatar</option>
-                        <option value="🇧🇭">🇧🇭 Bahrain</option>
+                        <option value="🇶🇦">🇦 Qatar</option>
+                        <option value="🇧">🇧🇭 Bahrain</option>
                         <option value="🇵🇸">🇵🇸 Palestine</option>
                         <option value="🇹🇷">🇹🇷 Turkey</option>
                         <option value="🇮🇳">🇮🇳 India</option>
                         <option value="🇯🇵">🇯🇵 Japan</option>
                         <option value="🇰🇷">🇰🇷 South Korea</option>
                         <option value="🇨🇳">🇨🇳 China</option>
-                        <option value="🇷🇺">🇷🇺 Russia</option>
+                        <option value="🇷">🇷🇺 Russia</option>
                         <option value="🇩🇪">🇩🇪 Germany</option>
-                        <option value="🇫🇷">🇫🇷 France</option>
+                        <option value="🇫🇷">🇫 France</option>
                         <option value="🇧🇷">🇧🇷 Brazil</option>
                         <option value="🇨🇦">🇨🇦 Canada</option>
                         <option value="🇦🇺">🇦🇺 Australia</option>
@@ -408,7 +441,7 @@
         
             if (tabId === 'home-tab') { document.getElementById('menu-home').classList.add('active'); document.getElementById('page-title').innerText = "Ali-A Online Home Menu"; } 
             else if (tabId === 'mods-tab') { document.getElementById('menu-mods').classList.add('active'); document.getElementById('page-title').innerText = "Browse Available Mods"; loadMods(); } 
-            else if (tabId === 'favorites-tab') { document.getElementById('menu-favorites').classList.add('active'); document.getElementById('page-title').innerText = "Your Favorite Mods ⭐"; loadFavorites(); } 
+            else if (tabId === 'favorites-tab') { document.getElementById('menu-favorites').classList.add('active'); document.getElementById('page-title').innerText = "Your Favorite Mods "; loadFavorites(); } 
             else if (tabId === 'friends-tab') { document.getElementById('menu-friends').classList.add('active'); document.getElementById('page-title').innerText = "Friends & Requests 👥"; loadFriends(); }
             else if (tabId === 'profile-tab') { document.getElementById('page-title').innerText = "User Profile"; }
             else if (tabId === 'upload-tab') { document.getElementById('menu-upload').classList.add('active'); document.getElementById('page-title').innerText = "Upload Your Mod"; } 
@@ -432,10 +465,15 @@
                 document.getElementById('account-panel').classList.remove('hidden');
                 
                 const userProfile = JSON.parse(localStorage.getItem('alia_user_profile_' + loggedUser) || '{}');
-                if (userProfile.country) {
-                    document.getElementById('header-country-flag').innerText = userProfile.country === '❌' ? '' : userProfile.country;
-                    document.getElementById('country-select').value = userProfile.country;
-                }
+                const countryFlag = userProfile.country === '❌' ? '' : (userProfile.country || '');
+                
+                // Update header flag
+                document.getElementById('header-country-flag').innerText = countryFlag;
+                document.getElementById('country-select').value = userProfile.country || '🌍';
+                
+                // Update account panel flag badge
+                document.getElementById('account-profile-flag').innerText = countryFlag;
+                
                 if (userProfile.profilePic) {
                     document.getElementById('header-profile-img').src = userProfile.profilePic;
                     document.getElementById('account-profile-img').src = userProfile.profilePic;
@@ -449,6 +487,7 @@
                 document.getElementById('auth-panel').classList.remove('hidden');
                 document.getElementById('account-panel').classList.add('hidden');
                 document.getElementById('header-country-flag').innerText = '';
+                document.getElementById('account-profile-flag').innerText = '';
                 if (!document.getElementById('upload-tab').classList.contains('hidden')) switchTab('home-tab');
             }
         }
@@ -600,9 +639,13 @@
                 showNotification("Please login to view profiles.", "error");
                 return;
             }
-            
+    
             try {
-                const profileRes = await fetch(`https://alia-server.onrender.com/api/user/profile?username=${encodeURIComponent(username)}`);
+                const profileRes = await fetch(`https://alia-server.onrender.com/api/user/profile?username=${encodeURIComponent(username)}`, {
+                    headers: {
+                        'x-viewer-username': loggedUser
+                    }
+                });
                 const profileData = await profileRes.json();
                 
                 if (!profileRes.ok) {
@@ -986,7 +1029,7 @@
                     <div class="mod-card" style="border-color: ${mod.color || '#0088ff'}; box-shadow: 0 0 12px ${mod.color ? mod.color + '4D' : 'rgba(0, 136, 255, 0.3)'}">
                         ${loggedUser ? `<button class="favorite-btn ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite('${mod.name}')" title="Favorite">⭐</button>` : ''}
                         ${showUpdateTag ? '<div class="update-tag">UPDATE</div>' : ''}
-                        ${canDelete ? `<button class="delete-btn" onclick="confirmDeleteMod('${mod.name}')" title="Delete Mod">🗑️</button>` : ''}
+                        ${canDelete ? `<button class="delete-btn" onclick="confirmDeleteMod('${mod.name}')" title="Delete Mod">️</button>` : ''}
                         <img src="${mod.icon || 'images/default-icon.png'}" alt="${mod.name}" class="mod-icon">
                         <h3>${mod.name}</h3>
                         <div style="display:flex; align-items:center; justify-content:center; gap:5px; margin-bottom:8px;">
@@ -995,7 +1038,7 @@
                         </div>
                         <p style="font-size: 13px;">${mod.description || ''}</p>
                         <div class="mod-stats">
-                            <span>📦 ${mod.size || 'N/A'}</span>
+                            <span> ${mod.size || 'N/A'}</span>
                             <span>⬇️ ${mod.downloads || 0}</span>
                             <span>❤️ ${mod.likes || 0}</span>
                         </div>
