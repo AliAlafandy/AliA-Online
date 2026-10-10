@@ -60,30 +60,18 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          
-      - name: Install Frontend Dependencies
-        run: |
-          npm install
-          npm install @capacitor/push-notifications@^5.0.0 @capacitor/assets@^3.0.0 --save-dev
-          npm install @capacitor/assets --save-dev
-          npm run build
-          
       - name: Prepare Web Assets
         run: |
           mkdir -p public
           cp index.html public/
-          
-      - name: Prepare Android Project
+      - name: Build Android APK
         run: |
-          npx cap add android
+          npm install
+          npm install @capacitor/assets --save-dev
+          npm run build
+          npx cap add android || true
           npx cap sync android
-          
-      - name: Inject google-services.json
-        run: |
-          mkdir -p android/app
-          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
-          
-      - name: Configure Android Manifest & Assets
+      - name: url things and build game
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           python3 -c "
@@ -102,19 +90,14 @@ jobs:
               f.write(new_content)
           "
           npx capacitor-assets generate --assetPath images
-          
-      - name: Build Android APK
-        run: |
           cd android
           ./gradlew assembleRelease
-          
       - name: Rename and Prepare APK
         id: apk
         run: |
           mkdir -p output
           cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Ali-A_Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Ali-A_Online.apk"
           echo "path=output/Ali-A_Online.apk" >> $GITHUB_OUTPUT
-          
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
