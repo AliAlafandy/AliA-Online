@@ -49,36 +49,39 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          
+      - name: Install Frontend Dependencies
+        run: |
+          npm install
+          npm install @capacitor/push-notifications@^5.0.0 @capacitor/assets@^3.0.0 --save-dev
+          
       - name: Prepare Web Assets
         run: |
           mkdir -p public
           cp index.html public/
-      - name: Install Dependencies
-        run: |
-          npm install
-          npm install @capacitor/push-notifications
-          npm install @capacitor/assets --save-dev
+          
       - name: Prepare Android Project
         run: |
-          npx cap add android
+          npx cap add android || true
           npx cap sync android
+          
       - name: Inject google-services.json
         run: |
           mkdir -p android/app
           echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
-      - name: Build Android APK
-        run: |
-          npm run build
-      - name: url things and build game
+          
+      - name: Configure Android Manifest & Assets
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           python3 -c "
@@ -97,14 +100,19 @@ jobs:
               f.write(new_content)
           "
           npx capacitor-assets generate --assetPath images
+          
+      - name: Build Android APK
+        run: |
           cd android
           ./gradlew assembleRelease
+          
       - name: Rename and Prepare APK
         id: apk
         run: |
           mkdir -p output
           cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Ali-A_Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Ali-A_Online.apk"
           echo "path=output/Ali-A_Online.apk" >> $GITHUB_OUTPUT
+          
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
