@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+const axios = require('axios');
 const fetch = require('node-fetch');
 const mongoose = require('mongoose');
 const { createClient } = require('@supabase/supabase-js');
@@ -31,7 +32,10 @@ const userSchema = new mongoose.Schema({
     email: { type: String, default: "" },
     phone: { type: String, default: "" },
     country: { type: String, default: "🌍" },
-    profilePic: { type: String, default: "" }
+    profilePic: { type: String, default: "" },
+    friends: [{ type: String }],
+    friendRequests: [{ from: { type: String }, timestamp: { type: Number, default: Date.now } }],
+    pushToken: { type: String, default: "" }
 });
 const User = mongoose.model('User', userSchema);
 
@@ -56,6 +60,36 @@ const modSchema = new mongoose.Schema({
 const Mod = mongoose.model('Mod', modSchema);
 
 const upload = multer({ dest: path.join(__dirname, 'temp_uploads') });
+
+async function sendPushNotification(usernames, title, message) {
+    try {
+        const users = await User.find({ username: { $in: usernames } });
+        const tokens = users.map(u => u.pushToken).filter(t => t);
+        
+        if (tokens.length === 0 || !process.env.ONESIGNAL_APP_ID || !process.env.ONESIGNAL_REST_API_KEY) {
+            console.log("No push tokens or OneSignal keys configured.");
+            return;
+        }
+
+        await axios.post('https://onesignal.com/api/v1/notifications', {
+            app_id: process.env.ONESIGNAL_APP_ID,
+            include_player_ids: tokens,
+            headings: { en: title },
+            contents: { en: message }
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Basic ${process.env.ONESIGNAL_REST_API_KEY}`
+            }
+        });
+    } catch (err) {
+        console.error("Push notification error:", err.message);
+    }
+}
+
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is running and healthy', timestamp: new Date().toISOString() });
+});
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is running and healthy', timestamp: new Date().toISOString() });
@@ -308,6 +342,90 @@ app.post('/api/delete-mod', async (req, res) => {
         await Mod.deleteOne({ name: modName });
         return res.json({ success: true, message: "Mod deleted successfully." });
     } catch (err) { console.error("Error deleting mod:", err); return res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/save-push-token', async (req, res) => {
+    const { username, token } = req.body;
+    if (!username || !token) return res.status(400).json({ error: "Username and token required." });
+    try {
+        await User.updateOne({ username }, { pushToken: token });
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/friend/request', async (req, res) => {
+    const { from, to } = req.body;
+    if (!from || !to) return res.status(400).json({ error: "Missing fields" });
+    if (from === to) return res.status(400).json({ error: "You cannot friend yourself." });
+    try {
+        const targetUser = await User.findOne({ username: to });
+        if (!targetUser) return res.status(404).json({ error: "User not found." });
+        if (targetUser.friends.includes(from)) return res.status(400).json({ error: "Already friends." });
+        if (targetUser.friendRequests.some(req => req.from === from)) return res.status(400).json({ error: "Request already sent." });
+
+        targetUser.friendRequests.push({ from, timestamp: Date.now() });
+        await targetUser.save();
+        
+        sendPushNotification([to], "New Friend Request!", `${from} wants to be your friend.`);
+        
+        res.json({ success: true, message: "Friend request sent." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/friend/accept', async (req, res) => {
+    const { username, friendUsername } = req.body;
+    if (!username || !friendUsername) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const user = await User.findOne({ username });
+        const friend = await User.findOne({ username: friendUsername });
+        if (!user || !friend) return res.status(404).json({ error: "User not found." });
+
+        user.friendRequests = user.friendRequests.filter(req => req.from !== friendUsername);
+        if (!user.friends.includes(friendUsername)) user.friends.push(friendUsername);
+        if (!friend.friends.includes(username)) friend.friends.push(username);
+
+        await user.save();
+        await friend.save();
+        res.json({ success: true, message: "Friend request accepted." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/friend/reject', async (req, res) => {
+    const { username, friendUsername } = req.body;
+    if (!username || !friendUsername) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const user = await User.findOne({ username });
+        if (!user) return res.status(404).json({ error: "User not found." });
+        user.friendRequests = user.friendRequests.filter(req => req.from !== friendUsername);
+        await user.save();
+        res.json({ success: true, message: "Friend request rejected." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/friend/remove', async (req, res) => {
+    const { username, friendUsername } = req.body;
+    if (!username || !friendUsername) return res.status(400).json({ error: "Missing fields" });
+    try {
+        const user = await User.findOne({ username });
+        const friend = await User.findOne({ username: friendUsername });
+        if (!user || !friend) return res.status(404).json({ error: "User not found." });
+
+        user.friends = user.friends.filter(f => f !== friendUsername);
+        friend.friends = friend.friends.filter(f => f !== username);
+        await user.save();
+        await friend.save();
+        res.json({ success: true, message: "Friend removed." });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/friends', async (req, res) => {
+    const { username } = req.query;
+    if (!username) return res.status(400).json({ error: "Username required." });
+    try {
+        const user = await User.findOne({ username }).select('friends friendRequests');
+        if (!user) return res.status(404).json({ error: "User not found." });
+        res.json({ friends: user.friends, requests: user.friendRequests });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/google', async (req, res) => {
