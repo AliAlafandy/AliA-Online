@@ -323,11 +323,9 @@
         async function initPushNotifications() {
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
                 const { PushNotifications } = window.Capacitor.Plugins;
-                
                 const perm = await PushNotifications.requestPermissions();
                 if (perm.receive === 'granted') {
                     await PushNotifications.register();
-                    
                     PushNotifications.addListener('registration', async (token) => {
                         const loggedUser = localStorage.getItem('alia_logged_in_user');
                         if (loggedUser) {
@@ -338,7 +336,6 @@
                             });
                         }
                     });
-        
                     PushNotifications.addListener('pushNotificationReceived', (notification) => {
                         showNotification(`${notification.title}: ${notification.body}`, "info");
                     });
@@ -383,6 +380,7 @@
             if (tabId === 'home-tab') { document.getElementById('menu-home').classList.add('active'); document.getElementById('page-title').innerText = "Ali-A Online Home Menu"; } 
             else if (tabId === 'mods-tab') { document.getElementById('menu-mods').classList.add('active'); document.getElementById('page-title').innerText = "Browse Available Mods"; loadMods(); } 
             else if (tabId === 'favorites-tab') { document.getElementById('menu-favorites').classList.add('active'); document.getElementById('page-title').innerText = "Your Favorite Mods ⭐"; loadFavorites(); } 
+            else if (tabId === 'friends-tab') { document.getElementById('menu-friends').classList.add('active'); document.getElementById('page-title').innerText = "Friends & Requests 👥"; loadFriends(); }
             else if (tabId === 'upload-tab') { document.getElementById('menu-upload').classList.add('active'); document.getElementById('page-title').innerText = "Upload Your Mod"; } 
             else if (tabId === 'my-mods-tab') { document.getElementById('menu-mymods').classList.add('active'); document.getElementById('page-title').innerText = "Your Uploaded Mods"; loadMyMods(); } 
             else if (tabId === 'account-tab') { document.getElementById('menu-account').classList.add('active'); document.getElementById('page-title').innerText = "Account Settings"; }
@@ -471,12 +469,10 @@
         async function loadFriends() {
             const loggedUser = localStorage.getItem('alia_logged_in_user');
             if (!loggedUser) return;
-            
             try {
                 const res = await fetch(`https://alia-server.onrender.com/api/friends?username=${encodeURIComponent(loggedUser)}`);
                 const data = await res.json();
                 
-                // Render Requests
                 const reqContainer = document.getElementById('friend-requests-container');
                 if (data.requests && data.requests.length > 0) {
                     reqContainer.innerHTML = data.requests.map(req => `
@@ -492,7 +488,6 @@
                     reqContainer.innerHTML = '<p style="color: #666;">No pending friend requests.</p>';
                 }
         
-                // Render Friends
                 const friendsContainer = document.getElementById('friends-list-container');
                 if (data.friends && data.friends.length > 0) {
                     friendsContainer.innerHTML = data.friends.map(friend => `
@@ -513,7 +508,6 @@
             const loggedUser = localStorage.getItem('alia_logged_in_user');
             const targetUser = document.getElementById('friend-search-input').value.trim();
             if (!loggedUser || !targetUser) { showNotification("Please enter a username.", "error"); return; }
-        
             try {
                 const res = await fetch('https://alia-server.onrender.com/api/friend/request', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -576,11 +570,6 @@
             document.getElementById('forgot-form').classList.add('hidden');
             if (view === 'register') document.getElementById('register-form').classList.remove('hidden');
             else if (view === 'forgot') document.getElementById('forgot-form').classList.remove('hidden');
-            } else if (tabId === 'friends-tab') { 
-                document.getElementById('menu-friends').classList.add('active'); 
-                document.getElementById('page-title').innerText = "Friends & Requests 👥"; 
-                loadFriends();
-            } 
             else document.getElementById('login-form').classList.remove('hidden');
         }
 
