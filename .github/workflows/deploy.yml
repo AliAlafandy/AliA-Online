@@ -73,7 +73,7 @@ jobs:
           
       - name: Prepare Android Project
         run: |
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
           
       - name: Inject google-services.json
@@ -140,7 +140,7 @@ jobs:
           npm install
           npm install @capacitor/assets --save-dev
           npm run build
-          npx cap add ios || true
+          npx cap add ios
           npx cap sync ios
       - name: Same thing as android
         run: |
