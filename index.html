@@ -129,6 +129,7 @@
                 </div>
                 <div class="tag-filters">
                     <button class="tag-btn active" onclick="filterByTag('All', event)">All</button>
+                    <button class="tag-btn" onclick="filterByTag('Full', event)">Full</button>
                     <button class="tag-btn" onclick="filterByTag('Characters', event)">Characters</button>
                     <button class="tag-btn" onclick="filterByTag('Levels', event)">Levels</button>
                     <button class="tag-btn" onclick="filterByTag('Scripts', event)">Scripts</button>
@@ -167,6 +168,7 @@
                     <input type="text" id="mod-name" placeholder="Mod Name"><br>
                     <input type="text" id="mod-desc" placeholder="Mod Description"><br>
                     <select id="mod-tag">
+                        <option value="Full">Full</option>
                         <option value="Characters">Characters</option>
                         <option value="Levels">Levels</option>
                         <option value="Scripts">Scripts</option>
