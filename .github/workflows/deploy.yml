@@ -30,8 +30,6 @@ jobs:
       - name: Install Dependencies & Build
         run: |
           npm install
-          npm install @capacitor/push-notifications
-          npx cap sync
           npm run build
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -64,9 +62,14 @@ jobs:
         run: |
           mkdir -p public
           cp index.html public/
+      - name: Inject google-services.json
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > android/app/google-services.json
       - name: Build Android APK
         run: |
           npm install
+          npm install @capacitor/push-notifications
+          npx cap sync
           npm install @capacitor/assets --save-dev
           npm run build
           npx cap add android || true
