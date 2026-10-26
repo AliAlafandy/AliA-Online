@@ -91,10 +91,6 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is running and healthy', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Server is running and healthy', timestamp: new Date().toISOString() });
-});
-
 app.get('/api/check-username', async (req, res) => {
     const { username } = req.query;
     if (!username) return res.status(400).json({ error: "Username required." });
@@ -534,6 +530,13 @@ app.post('/api/auth/github', async (req, res) => {
         return res.json({ success: true, username: user.username });
     } catch (err) { return res.status(500).json({ error: "GitHub authentication failed." }); }
 });
+
+const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`;
+setInterval(() => {
+    axios.get(`${SERVER_URL}/api/health`)
+        .then(() => console.log('🔄 Keep-alive ping sent successfully.'))
+        .catch(err => console.log('⚠️ Keep-alive ping failed:', err.message));
+}, 14 * 60 * 1000);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
