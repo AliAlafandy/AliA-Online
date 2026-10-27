@@ -1,7 +1,8 @@
 let allMods = [];
 let currentTag = 'All';
 
-const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+const path = window.location.pathname;
+const currentPage = path.substring(path.lastIndexOf('/') + 1) || 'index.html';
 
 function showNotification(message, type = 'info') {
     const container = document.getElementById('notification-container');
@@ -18,7 +19,9 @@ function showNotification(message, type = 'info') {
 }
 
 function navigateTo(page) {
-    window.location.href = page;
+    const basePath = path.includes('/AliA-Online/') ? '/AliA-Online/' : '/';
+    const cleanPage = page.replace(/^\.+\/|^\//, ''); 
+    window.location.href = basePath + cleanPage;
 }
 
 async function initPushNotifications() {
@@ -50,11 +53,11 @@ window.onload = function() {
     initPushNotifications();
     highlightSidebar();
 
-    if (currentPage === 'utils/mods.html') {
+    if (currentPage === 'mods.html') {
         loadMods();
-    } else if (currentPage === 'utils/friends.html') {
+    } else if (currentPage === 'friends.html') {
         loadFriends();
-    } else if (currentPage === 'utils/profile.html') {
+    } else if (currentPage === 'profile.html') {
         const urlParams = new URLSearchParams(window.location.search);
         const username = urlParams.get('user');
         if (username) fetchUserProfile(username);
@@ -63,11 +66,11 @@ window.onload = function() {
 
 function highlightSidebar() {
     document.querySelectorAll('.sidebar-menu li').forEach(li => li.classList.remove('active'));
-    if (currentPage === 'index.html' || currentPage === '/') document.getElementById('menu-home')?.classList.add('active');
-    else if (currentPage === 'utils/mods.html') document.getElementById('menu-mods')?.classList.add('active');
-    else if (currentPage === 'utils/friends.html') document.getElementById('menu-friends')?.classList.add('active');
-    else if (currentPage === 'utils/upload.html') document.getElementById('menu-upload')?.classList.add('active');
-    else if (currentPage === 'utils/account.html') document.getElementById('menu-account')?.classList.add('active');
+    if (currentPage === 'index.html' || currentPage === '') document.getElementById('menu-home')?.classList.add('active');
+    else if (currentPage === 'mods.html') document.getElementById('menu-mods')?.classList.add('active');
+    else if (currentPage === 'friends.html') document.getElementById('menu-friends')?.classList.add('active');
+    else if (currentPage === 'upload.html') document.getElementById('menu-upload')?.classList.add('active');
+    else if (currentPage === 'account.html') document.getElementById('menu-account')?.classList.add('active');
 }
 
 function updateOnlineStatus() {
@@ -171,7 +174,7 @@ function confirmDeleteMod(modName) {
         }
 
         async function deleteAccount() {
-            if (!confirm("⚠️ WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone!")) return;
+            if (!confirm("WARNING: Are you absolutely sure you want to delete your account? This action cannot be undone!")) return;
             const confirmation = prompt("FINAL WARNING: Type 'DELETE' to confirm account deletion:");
             if (confirmation !== 'DELETE') { showNotification("Account deletion cancelled.", "info"); return; }
 
@@ -294,7 +297,7 @@ async function fetchUserProfile(username) {
     const loggedUser = localStorage.getItem('alia_logged_in_user');
     if (!loggedUser) {
         showNotification("Please login to view profiles.", "error");
-        navigateTo('account.html');
+        navigateTo('utils/account.html');
         return;
     }
 

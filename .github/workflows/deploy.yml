@@ -60,23 +60,25 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          
       - name: Prepare Web Assets
         run: |
-          mkdir -p public
-          cp utils/*.html public/
-          cp *.html public/
-          cp *.css public/
-          cp *.js public/
+          mkdir -p public/utils
+          cp *.html public/ || true
+          cp *.css public/ || true
+          cp *.js public/ || true
+          cp utils/*.html public/utils/ || true
           cp -r images public/ || true
+          
       - name: Build Android APK
         run: |
           npm install
           npm install @capacitor/push-notifications@^5.0.0 @capacitor/assets@^3.0.0 --save-dev
-          npm install @capacitor/assets --save-dev
           npm run build
           npx cap add android || true
           npx cap sync android
-      - name: url things and build game
+          
+      - name: Configure Android Manifest & Assets
         run: |
           MANIFEST_PATH="android/app/src/main/AndroidManifest.xml"
           python3 -c "
@@ -97,12 +99,14 @@ jobs:
           npx capacitor-assets generate --assetPath images
           cd android
           ./gradlew assembleRelease
+          
       - name: Rename and Prepare APK
         id: apk
         run: |
           mkdir -p output
           cp android/app/build/outputs/apk/release/app-release-unsigned.apk "output/Ali-A_Online.apk" || cp android/app/build/outputs/apk/release/app-release.apk "output/Ali-A_Online.apk"
           echo "path=output/Ali-A_Online.apk" >> $GITHUB_OUTPUT
+          
       - name: Upload Android Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -121,28 +125,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          
       - name: Prepare Web Assets
         run: |
-          mkdir -p public
-          cp utils/*.html public/
-          cp *.html public/
-          cp *.css public/
-          cp *.js public/
+          mkdir -p public/utils
+          cp *.html public/ || true
+          cp *.css public/ || true
+          cp *.js public/ || true
+          cp utils/*.html public/utils/ || true
           cp -r images public/ || true
+          
       - name: Build iOS App & Package IPA
         run: |
           npm install
           npm install @capacitor/assets --save-dev
           npm run build
-          npx cap add ios
+          npx cap add ios || true
           npx cap sync ios
-      - name: Same thing as android
+          
+      - name: Configure iOS Plist & Assets
         run: |
           PLIST_PATH="ios/App/App/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST_PATH"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alialafandy.aliaonline'" "$PLIST_PATH"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST_PATH" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST_PATH" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST_PATH" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alialafandy.aliaonline'" "$PLIST_PATH" || true
           npx capacitor-assets generate --assetPath images
           cd ios/App
           xcodebuild -workspace "App.xcworkspace" \
@@ -166,12 +173,14 @@ jobs:
           cp -r "$APP_PATH" Payload/
           zip -r "Ali-A_Online.ipa" Payload
           rm -rf Payload
+          
       - name: Prepare IPA Output
         id: ipa
         run: |
           mkdir -p output
-          mv ios/App/"Ali-A_Online.ipa" output/
+          mv ios/App/"Ali-A_Online.ipa" output/ || true
           echo "path=output/Ali-A_Online.ipa" >> $GITHUB_OUTPUT
+          
       - name: Upload iOS Artifact
         uses: actions/upload-artifact@v4
         with:
