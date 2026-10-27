@@ -63,7 +63,11 @@ jobs:
       - name: Prepare Web Assets
         run: |
           mkdir -p public
-          cp index.html public/
+          cp utils/*.html public/
+          cp *.html public/
+          cp *.css public/
+          cp *.js public/
+          cp -r images public/ || true
       - name: Build Android APK
         run: |
           npm install
@@ -120,7 +124,11 @@ jobs:
       - name: Prepare Web Assets
         run: |
           mkdir -p public
-          cp index.html public/
+          cp utils/*.html public/
+          cp *.html public/
+          cp *.css public/
+          cp *.js public/
+          cp -r images public/ || true
       - name: Build iOS App & Package IPA
         run: |
           npm install

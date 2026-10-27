@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ali-A Online - Account</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAADdklEQVR4AcSXWahOURSAj3koIkrmSEIoD5IHZUh5kJAxUWR+EBIhIUMpEkKKTAkPyhQeKJHhwUzGzCSSmcx8X+6fa//nnP/c219u6/vX3vusvfc6++y91r4Voyj69T/RAeb/f1JGBzSvWVRvHTHjgNuwWwndoR/kpA6FneDz7ehGkF0yOuAEWxh1FZyGLtANTsJhWAhLYDFshpwMpXCjhGrofMngQD16NYBTcA/ewGrpYCoOhK9yEWyU0Q7eGd9AR2sJdiJcCDjjxHHpOgS+Qk+cUzkEHCOU6DWOhNswFxZeoYCGPAg70p8NtuAahTKNhI4QyjoYHkE1SHGjBCE3B74yKlVm0LoPS8orKCsgmKQ64/C6dS5o02C4ejILyS4oDLv2GDCN7IvZnsIs3SXCgOtYH4RIUkkcYlI4LVKMa/mQiwQH7xu9anxSTFAeKOU3yWEVwYB+jGw1L456Ij3wY/yPldMBuhmfjw3gGHB0wifp6CI8oTYE4UtCUVq3Mw+FwBzwhPdFXwPjvcfTIXqT+DYyGj9ETIVlSHPCeEnbsTYPZUH2c8mVoAw/B+O9kQyibtH6izRGGZDMm1RhJcSDGOpoaRdFMMOG0R6+DEWCafoZ+Aa6Gx9coWYl6FTA66hDFQMrgwGy6roV2YCr+iG4CT8CgNQ/t8psjFlF2VTqhTVyWKcZIGRyYQfcD0By+wn1YA3sh97neUtbGNPyZsqn6PNoVi58qvpUuURQGIq9iTmT895tafhn9+euD+gQDQPHeYCb1QuIm9VPYnk+KA6Hx2ZIGE5QrcIa6ux0VeUlxQ76P/v75qS5QHQk6i4qRFAdyg+d69SgpmKZ/UPbt+qIVnXO5j1qBMeAx9YrmBjxE3T6oQBIccHKXemBgbtWbkMnGQFOLBnUIzZF74AQFN+oetGOiAklwQG/dPL0C81zVCX07s+BWGj3vE9BPwfow9A74AC3Bo4iKkQQHtHSwqxQaQyimYJfdO6GolwcDkJm2F4RHwjoCKvLR6IXUc6/mkOOD5fk2PQWC0izNtyDMxCLnkBqrOtHn+XQWdd7XKtQkZJ9rNj8s4H10XPGYOXBqdO8Yz37Y+ejIYlDyWCyinS9xrBT02UTcBfUd7STUQJVEVm+lgeDYlUywgGRzIjWCU8x8SU2wcyzE0GyYvNwZ5UgYH8vpmaihk9BsAAP//GsBXNQAAAAZJREFUAwAWxc0hZkmO2wAAAABJRU5ErkJggg==">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="notification-container"></div>
+    <div id="offline-screen" class="offline-screen hidden">
+        <h2>No Internet Connection</h2>
+        <p style="color: #00d2ff; font-size: 16px; margin-top: 10px;">Please check your Wi-Fi or network connection to continue.</p>
+        <button onclick="checkConnection()" style="margin-top: 20px;">Retry Connection</button>
+    </div>
+
+    <button class="menu-toggle-btn" onclick="toggleSidebar()" title="Toggle Menu">☰</button>
+
+    <div class="profile-corner">
+        <span id="header-country-flag" style="font-size: 24px;"></span>
+        <img id="header-profile-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23030712'/><circle cx='50' cy='40' r='20' fill='%2300d2ff'/><path d='M20 90 Q50 60 80 90' fill='%2300d2ff'/></svg>" alt="Profile" class="profile-img" onclick="navigateTo('account.html')" title="Account Settings">
+    </div>
+
+    <div class="app-container">
+        <div class="sidebar">
+            <h2>Ali-A Online</h2>
+            <ul class="sidebar-menu">
+                <li onclick="navigateTo('index.html')" id="menu-home">Home Menu 🏠</li>
+                <li onclick="navigateTo('utils/mods.html')" id="menu-mods">Browse Mods 🔍</li>
+                <li onclick="navigateTo('utils/friends.html')" id="menu-friends">Friends 👥</li>
+                <li onclick="navigateTo('utils/upload.html')" id="menu-upload" class="hidden">Upload Mod ⬆️</li>
+                <li onclick="navigateTo('utils/account.html')" id="menu-account" class="active">Your Account 👤</li>
+            </ul>
+        </div>
+
+        <div class="main-content">
+            <h1 id="page-title">Account Settings</h1>
+            
+            <div class="panel" id="auth-panel">
+                <div id="login-form">
+                    <h3>Login to Your Account</h3>
+                    <input type="text" id="login-identifier" placeholder="Username, Email, or Phone"><br>
+                    <input type="password" id="login-password" placeholder="Password"><br>
+                    <button onclick="handleLogin()">Login</button>
+                    <div class="oauth-divider">Or continue with</div>
+                    <div class="social-container">
+                        <div id="g_id_onload" data-client_id="803940024031-52dvqhu4camptdqhv9474f1jvdlf6jf0.apps.googleusercontent.com" data-callback="handleGoogleSignIn" data-auto_prompt="false"></div>
+                        <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signin_with" data-size="large"></div>
+                        <button class="btn-discord" onclick="handleDiscordSignIn()">Login with Discord</button>
+                        <button class="btn-github" onclick="handleGitHubSignIn()">Login with GitHub</button>
+                    </div>
+                    <p>Don't have an account? <span class="toggle-link" onclick="switchView('register')">Register here</span></p>
+                    <p><span class="toggle-link" onclick="switchView('forgot')">Forgot Password?</span></p>
+                </div>
+
+                <div id="register-form" class="hidden">
+                    <h3>Create an Account</h3>
+                    <input type="text" id="reg-username" placeholder="New Username"><br>
+                    <input type="password" id="reg-password" placeholder="New Password"><br>
+                    <input type="email" id="reg-email" placeholder="Recovery Email (required)"><br>
+                    <input type="tel" id="reg-phone" placeholder="Recovery Phone Number (optional)"><br>
+                    <button onclick="handleRegister()">Register Account</button>
+                    <div class="oauth-divider">Or register with</div>
+                    <div class="social-container">
+                        <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="dark" data-text="signup_with" data-size="large"></div>
+                        <button class="btn-discord" onclick="handleDiscordSignIn()">Register with Discord</button>
+                        <button class="btn-github" onclick="handleGitHubSignIn()">Register with GitHub</button>
+                    </div>
+                    <p>Already have an account? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
+                </div>
+
+                <div id="forgot-form" class="hidden">
+                    <h3>Reset Password</h3>
+                    <p style="font-size: 13px; color: #00d2ff;">Enter your account username and recovery email.</p>
+                    <input type="text" id="forgot-username" placeholder="Username"><br>
+                    <input type="email" id="forgot-email" placeholder="Recovery Email"><br>
+                    <button onclick="handleForgotPassword()">Reset Password</button>
+                    <p>Remembered your password? <span class="toggle-link" onclick="switchView('login')">Login here</span></p>
+                </div>
+            </div>
+
+            <div class="panel hidden" id="account-panel">
+                <h3>Account Management</h3>
+                <div class="profile-section">
+                    <div class="profile-image-container">
+                        <div class="profile-image-wrapper">
+                            <img id="account-profile-img" src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23030712'/><circle cx='50' cy='40' r='20' fill='%2300d2ff'/><path d='M20 90 Q50 60 80 90' fill='%2300d2ff'/></svg>" class="profile-img-large">
+                            <div id="account-profile-flag" class="flag-badge"></div>
+                        </div>
+                    </div>
+                    <input type="file" id="update-profile-pic" accept="image/*" style="display:none" onchange="previewProfilePic(this)">
+                    <button onclick="document.getElementById('update-profile-pic').click()" style="margin-top:10px; font-size:12px; padding: 8px;">Change Profile Picture</button>
+                </div>
+                <p>Logged in as: <span id="account-current-user" style="color: #00d2ff; font-weight: bold;"></span></p>
+                
+                <label style="font-size: 13px; color: #00d2ff; display:block; text-align:left; margin-left: 7.5%;">Country Flag:</label>
+                <select id="country-select">
+                    <option value="❌">❌ Hidden / No Flag</option>
+                    <option value="🇺🇸">🇺🇸 United States</option>
+                    <option value="🇬🇧">🇬🇧 United Kingdom</option>
+                    <option value="🇸🇦">🇸🇦 Saudi Arabia</option>
+                    <option value="🇪🇬">🇪🇬 Egypt</option>
+                    <option value="🇦🇪">🇦🇪 UAE</option>
+                    <option value="🇯🇴">🇯🇴 Jordan</option>
+                    <option value="🇮🇶">🇮🇶 Iraq</option>
+                    <option value="🇾🇪">🇾🇪 Yemen</option>
+                    <option value="🇸🇾">🇸🇾 Syria</option>
+                    <option value="🇱🇧">🇱🇧 Lebanon</option>
+                    <option value="🇹🇳">🇹🇳 Tunisia</option>
+                    <option value="🇩🇿">🇩🇿 Algeria</option>
+                    <option value="🇲🇦">🇲🇦 Morocco</option>
+                    <option value="🇸🇩">🇸🇩 Sudan</option>
+                    <option value="🇱🇾">🇱🇾 Libya</option>
+                    <option value="🇴🇲">🇴🇲 Oman</option>
+                    <option value="🇰🇼">🇰🇼 Kuwait</option>
+                    <option value="🇶🇦">🇶🇦 Qatar</option>
+                    <option value="🇧🇭">🇧🇭 Bahrain</option>
+                    <option value="🇵🇸">🇵🇸 Palestine</option>
+                    <option value="🇹🇷">🇹🇷 Turkey</option>
+                    <option value="🇮🇳">🇮🇳 India</option>
+                    <option value="🇯🇵">🇯🇵 Japan</option>
+                    <option value="🇰🇷">🇰🇷 South Korea</option>
+                    <option value="🇨🇳">🇨🇳 China</option>
+                    <option value="🇷🇺">🇷🇺 Russia</option>
+                    <option value="🇩🇪">🇩🇪 Germany</option>
+                    <option value="🇫🇷">🇫🇷 France</option>
+                    <option value="🇧🇷">🇧🇷 Brazil</option>
+                    <option value="🇨🇦">🇨🇦 Canada</option>
+                    <option value="🇦🇺">🇦🇺 Australia</option>
+                </select>
+
+                <input type="text" id="update-username" placeholder="New Username"><br>
+                <input type="email" id="update-email" placeholder="New Email"><br>
+                <input type="tel" id="update-phone" placeholder="New Phone Number"><br>
+                <input type="password" id="update-password" placeholder="New Password (leave blank to keep current)"><br>
+                
+                <button onclick="handleUpdateAccount()">Save Changes</button><br>
+                <button onclick="logout()" style="background-color: #ff0055; margin-top: 15px;">Logout of Account</button>
+                <button onclick="deleteAccount()" style="background-color: #330000; border: 1px solid #ff0000; color: #ff4444; margin-top: 15px;">⚠️ Delete Account</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-coming-soon">
+        <h3>Coming Soon...</h3>
+        <p>Making friends by accept or ignore, "Who is playing" live status, and enhanced Psych Online-style social features.</p>
+        <p style="font-size: 12px; margin-top: 10px;">© 2026 Ali-A Online | <a href="https://alialafandy.online/" style="color: #00d2ff;">alialafandy.online</a></p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
