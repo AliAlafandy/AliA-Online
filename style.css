@@ -61,11 +61,44 @@ button:hover { background-color: #00d2ff; color: #000000; box-shadow: 0 0 20px r
 .profile-image-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px; }
 .profile-image-wrapper { position: relative; display: inline-block; }
 .flag-badge { position: absolute; bottom: 0; right: 0; font-size: 24px; background: #030712; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #00d2ff; }
+
 @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.mobile-open { transform: translateX(0); }
-    .main-content { margin-left: 0; padding: 20px 15px; }
+    .main-content { margin-left: 0; padding: 80px 15px 20px 15px; }
     .menu-toggle-btn { display: flex; }
-    .profile-corner { top: 15px; right: 60px; }
-    #notification-container { top: 70px; right: 15px; }
+    
+    h1 { 
+        font-size: 20px; 
+        margin-top: 60px;
+        margin-bottom: 20px;
+        line-height: 1.3;
+    }
+    
+    .profile-corner { 
+        top: 15px; 
+        right: 15px;
+        z-index: 150;
+    }
+    
+    .profile-img { 
+        width: 35px; 
+        height: 35px; 
+    }
+    
+    #header-country-flag {
+        font-size: 20px;
+    }
+    
+    #notification-container { 
+        top: 60px; 
+        right: 10px; 
+        left: 10px;
+        max-width: calc(100% - 20px);
+    }
+    
+    .panel {
+        margin: 15px auto;
+        padding: 20px 15px;
+    }
 }
