@@ -89,7 +89,7 @@ jobs:
                       <action android:name=\"android.intent.action.VIEW\" />
                       <category android:name=\"android.intent.category.DEFAULT\" />
                       <category android:name=\"android.intent.category.BROWSABLE\" />
-                      <data android:scheme=\"com.alia.online\" />
+                      <data android:scheme=\"com.alafandy.ellawyonline\" />
                   </intent-filter>
           '''
           new_content = content.replace('</activity>', intent_filter + '\n            </activity>', 1)
@@ -149,7 +149,7 @@ jobs:
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PLIST_PATH" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PLIST_PATH" || true
           /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PLIST_PATH" || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alialafandy.aliaonline'" "$PLIST_PATH" || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string 'com.alafandy.ellawyonline'" "$PLIST_PATH" || true
           npx capacitor-assets generate --assetPath images
           cd ios/App
           xcodebuild -workspace "App.xcworkspace" \
