@@ -531,6 +531,123 @@ app.post('/api/auth/github', async (req, res) => {
     } catch (err) { return res.status(500).json({ error: "GitHub authentication failed." }); }
 });
 
+
+/*
+ * AliA-Game multiplayer REST API.
+ * Uses the existing HTTPS service so desktop and mobile clients do not need
+ * a separate TCP port or a second server process. Room state is in memory.
+ */
+const gamePlayers = new Map();
+const gameRooms = new Map();
+const GAME_PLAYER_TIMEOUT = 45000;
+const GAME_MAX_CHAT = 100;
+
+function gameRoom(code) {
+    if (!gameRooms.has(code)) gameRooms.set(code, { players: new Set(), messages: [], nextMessageId: 1 });
+    return gameRooms.get(code);
+}
+
+function gameRemovePlayer(playerId) {
+    const player = gamePlayers.get(playerId);
+    if (!player) return;
+    if (player.roomCode && gameRooms.has(player.roomCode)) {
+        const room = gameRooms.get(player.roomCode);
+        room.players.delete(playerId);
+        if (room.players.size === 0) gameRooms.delete(player.roomCode);
+    }
+    gamePlayers.delete(playerId);
+}
+
+function gamePublicPlayer(player) {
+    return { id: player.id, name: player.name, x: player.x, y: player.y, animation: player.animation };
+}
+
+app.post('/api/game/connect', (req, res) => {
+    const name = String(req.body.name || 'Player').trim().slice(0, 24) || 'Player';
+    const id = require('crypto').randomUUID();
+    const player = { id, name, x: 0, y: 0, animation: 'idle', roomCode: null, lastSeen: Date.now() };
+    gamePlayers.set(id, player);
+    res.json({ success: true, id, name });
+});
+
+app.post('/api/game/join', (req, res) => {
+    const { playerId } = req.body;
+    const code = String(req.body.code || '').trim().toUpperCase().slice(0, 16);
+    const player = gamePlayers.get(playerId);
+    if (!player) return res.status(401).json({ error: 'Game session expired. Reconnect.' });
+    if (!code) return res.status(400).json({ error: 'Room code is required.' });
+
+    if (player.roomCode && gameRooms.has(player.roomCode)) {
+        const previous = gameRooms.get(player.roomCode);
+        previous.players.delete(playerId);
+        if (previous.players.size === 0) gameRooms.delete(player.roomCode);
+    }
+
+    const room = gameRoom(code);
+    room.players.add(playerId);
+    player.roomCode = code;
+    player.lastSeen = Date.now();
+    res.json({ success: true, roomCode: code, players: [...room.players].map(id => gamePlayers.get(id)).filter(Boolean).map(gamePublicPlayer) });
+});
+
+app.post('/api/game/update', (req, res) => {
+    const { playerId } = req.body;
+    const player = gamePlayers.get(playerId);
+    if (!player) return res.status(401).json({ error: 'Game session expired.' });
+    player.x = Number.isFinite(Number(req.body.x)) ? Number(req.body.x) : player.x;
+    player.y = Number.isFinite(Number(req.body.y)) ? Number(req.body.y) : player.y;
+    player.animation = String(req.body.animation || 'idle').slice(0, 32);
+    player.lastSeen = Date.now();
+    res.json({ success: true });
+});
+
+app.post('/api/game/poll', (req, res) => {
+    const { playerId } = req.body;
+    const player = gamePlayers.get(playerId);
+    if (!player) return res.status(401).json({ error: 'Game session expired.' });
+    player.lastSeen = Date.now();
+
+    if (!player.roomCode || !gameRooms.has(player.roomCode)) {
+        return res.json({ roomCode: null, players: [], messages: [] });
+    }
+
+    const room = gameRooms.get(player.roomCode);
+    const after = Math.max(0, Number(req.body.afterMessageId) || 0);
+    const messages = room.messages.filter(message => message.id > after);
+    res.json({
+        roomCode: player.roomCode,
+        players: [...room.players].map(id => gamePlayers.get(id)).filter(Boolean).map(gamePublicPlayer),
+        messages
+    });
+});
+
+app.post('/api/game/chat', (req, res) => {
+    const player = gamePlayers.get(req.body.playerId);
+    const message = String(req.body.message || '').trim().slice(0, 300);
+    if (!player) return res.status(401).json({ error: 'Game session expired.' });
+    if (!player.roomCode || !gameRooms.has(player.roomCode)) return res.status(400).json({ error: 'Join a room first.' });
+    if (!message) return res.status(400).json({ error: 'Message cannot be empty.' });
+
+    const room = gameRooms.get(player.roomCode);
+    const entry = { id: room.nextMessageId++, name: player.name, message, timestamp: Date.now() };
+    room.messages.push(entry);
+    if (room.messages.length > GAME_MAX_CHAT) room.messages.shift();
+    res.json({ success: true, message: entry });
+});
+
+app.post('/api/game/disconnect', (req, res) => {
+    gameRemovePlayer(req.body.playerId);
+    res.json({ success: true });
+});
+
+// Remove abandoned sessions when a device closes without sending disconnect.
+setInterval(() => {
+    const cutoff = Date.now() - GAME_PLAYER_TIMEOUT;
+    for (const [id, player] of gamePlayers) {
+        if (player.lastSeen < cutoff) gameRemovePlayer(id);
+    }
+}, 15000);
+
 const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${process.env.PORT || 3000}`;
 setInterval(() => {
     axios.get(`${SERVER_URL}/api/health`)
